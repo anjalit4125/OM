@@ -1,0 +1,1387 @@
+# Practical 1: Breast cancer classification using NN
+
+
+#to create virtual environment
+
+pip install virtualenv
+
+python -m virtualenv p1
+
+cd p1
+
+cd scripts
+
+activate
+
+pip install tensorflow
+
+pip install ipykernel
+
+pip install jupyter notebook
+
+
+# actual practical 
+
+pip install tensorflow
+
+import tensorflow as tf
+print("TensorFlow version:", tf.__version__)
+print("Is GPU available?", tf.config.list_physical_devices('GPU'))
+
+
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras.losses import BinaryCrossentropy
+import pandas as pd
+import numpy as np
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+
+
+import pandas as pd
+df = pd.read_csv('/content/breast_cancer.csv')
+
+
+df.head()
+
+df["diagnosis"].value_counts()
+
+
+#converting diagnosis to integers
+df["diagnosis"]=df["diagnosis"].map
+
+# Dropping the id
+df=df.drop("id", axis=1)
+df.head()
+
+
+# Converting diagnosis into integers (1 and 0) using BinaryCrossentropy
+df["diagnosis"] = df["diagnosis"].map({"M":1,"B":0})
+df.head()
+
+x = df.drop("diagnosis",axis=1)
+y = df["diagnosis"]
+
+x.shape
+
+from tensorflow import keras # Import the 'keras' module from tensorflow
+
+input_layer=keras.Input(shape=[x.shape[1]]) # Now 'keras' should be defined
+input_layer
+
+hidden_layer1 = keras.layers.Dense(20, activation="relu") # Use keras.layers.Dense instead of keras.layersDense
+
+
+hidden_layer1=hidden_layer1(input_layer)
+
+
+#output_layer=keras.layers.Dense(1,activation=="sigmoid")
+output_layer=keras.layers.Dense(1,activation="sigmoid")
+
+
+output_layer=output_layer(hidden_layer1)
+
+1st layer = 300
+2nd layer = 30*20=600+2 =620
+3rd layer = 1*20=20 +1 = 21
+620 + 21 = 641
+
+keras_model =  keras.Model(inputs=input_layer,outputs=output_layer)
+
+keras_model.summary()
+
+keras_model.compile(optimizer="adam",loss="binary_crossentropy")
+
+keras_model.fit(x,y,epochs=50)
+
+#prediction
+p=keras_model.predict(x) # Use keras_model instead of keras.model
+p
+
+p[0:11]
+
+pred=pd.DataFrame({"pred":p[:,0]}) # Access the first column of the prediction array 'p'
+
+for i in p[0]:
+    pass
+
+for i in p[:,0]:
+    print(i)
+
+#converting into the binary values using threshold
+li_pred=[]
+for i in p[:,0]:
+    if i>=0.7:
+        li_pred.append(1)
+    else:
+        li_pred.append(0)
+
+
+li_pred[0:11]
+
+# createing dataframe on actual and predicted value
+actual_pred=pd.DataFrame({"actual":y,"predicted":li_pred})
+
+actual_pred.head()
+
+# Replace NaN values in 'actual' column with a suitable value, e.g., -1
+actual_pred["actual"] = actual_pred["actual"].fillna(-1)
+
+# Convert 'actual' column to integers
+actual_pred["actual"] = actual_pred["actual"].astype(int)
+
+# Now, calculate the confusion matrix
+confusion_matrix(actual_pred["actual"], actual_pred["predicted"])
+print(classification_report(actual_pred["actual"],actual_pred["predicted"]))
+
+#divide the data into train and validation set
+from sklearn.model_selection import train_test_split
+x_tr,x_test,y_tr,y_test=train_test_split(x,y,test_size=0.2,random_state=100)
+keras_model.fit(x_tr,y_tr,epochs=100)
+y_train_pred=keras_model.predict(x_tr)
+y_train_pred=pred[0:11]
+li_pred_train=[1 if x>0.7 else 0 for x in y_train_pred["pred"] ] # Access the 'pred' column using bracket notation
+li_pred_train[0:11]
+y_train_pred=pred[0:11]
+
+y_train_pred = keras_model.predict(x_tr)
+li_pred_train = [1 if x > 0.7 else 0 for x in y_train_pred[:, 0]]
+
+# Replace NaN values in 'y_tr' with the most frequent value
+# Check if the mode is empty before accessing it using iloc
+if not y_tr.mode().empty:
+    y_tr = y_tr.fillna(y_tr.mode().iloc[0])
+else:
+    # Handle the case when mode is empty, e.g., fill with a default value
+    y_tr = y_tr.fillna(0)  # Replace 0 with your desired default value
+
+# Alternatively, remove rows with NaN values
+# y_tr = y_tr.dropna()
+
+# Convert 'y_tr' to integers (if necessary)
+y_tr = y_tr.astype(int)
+
+# Now, calculate the confusion matrix
+confusion_matrix(y_tr.values, li_pred_train)
+
+#print classification report for training data
+print(classification_report(y_tr.values,li_pred_train))
+
+y_test_pred=keras_model.predict(x_test)
+li_pred_test=[1 if x>0.7 else 0 for x in y_test_pred[:,0] ]
+li_pred_test[0:11]
+
+# Impute NaN values in y_test with the most frequent value (mode)
+# Check if the mode is empty before accessing it using iloc
+if not y_test.mode().empty:
+    y_test = y_test.fillna(y_test.mode().iloc[0])
+else:
+    # Handle the case when mode is empty, e.g., fill with a default value
+    y_test = y_test.fillna(0)  # Replace 0 with your desired default value
+
+# Alternatively, remove rows with NaN values from both x_test and y_test
+# x_test = x_test.loc[y_test.dropna().index]
+# y_test = y_test.dropna()
+
+# Convert y_test to integers (if necessary)
+y_test = y_test.astype(int)
+
+# Now, calculate the classification report
+print(classification_report(y_test.values, li_pred_test))
+
+
+
+
+
+
+
+# Practical 2: Image card Classification using CNN (Jupyter Notebook)(Kaggle)
+
+# IMPORTANT: RUN THIS CELL IN ORDER TO IMPORT YOUR KAGGLE DATA SOURCES,
+# THEN FEEL FREE TO DELETE THIS CELL.
+# NOTE: THIS NOTEBOOK ENVIRONMENT DIFFERS FROM KAGGLE'S PYTHON
+# ENVIRONMENT SO THERE MAY BE MISSING LIBRARIES USED BY YOUR
+# NOTEBOOK.
+import kagglehub
+gpiosenka_cards_image_datasetclassification_path = kagglehub.dataset_download('gpiosenka/cards-image-datasetclassification')
+
+print('Data source import complete.')
+
+
+
+# This Python 3 environment comes with many helpful analytics libraries installed
+# It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python
+# For example, here's several helpful packages to load
+
+import numpy as np # linear algebra
+import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
+
+# Input data files are available in the read-only "../input/" directory
+# For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory
+
+import os
+for dirname, _, filenames in os.walk('/kaggle/input'):
+    for filename in filenames:
+        print(os.path.join(dirname, filename))
+
+# You can write up to 20GB to the current directory (/kaggle/working/) that gets preserved as output when you create a version using "Save & Run All"
+# You can also write temporary files to /kaggle/temp/, but they won't be saved outside of the current session
+
+
+import cv2 as cv
+import tensorflow as tf
+from tensorflow import keras
+from keras.layers import Dense,Dropout,Flatten,GaussianNoise
+from keras.losses import BinaryCrossentropy
+import matplotlib.pyplot as plt
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
+
+data_dir="/kaggle/input/cards-image-datasetclassification/train"
+
+
+import os
+class_list=os.listdir(data_dir)
+filestr=data_dir+"/ace of clubs/001.jpg"
+
+#absolute path of the image
+print(filestr)
+
+#reading one image
+image1=cv.imread(filestr)
+print(image1)
+
+#initialise the image extensions
+extensions=[".jpeg",".jpg",".png",".bmp"]
+#removing the images with wrong extension
+for imgclass in os.listdir(data_dir):
+   for j in os.listdir(data_dir+"/"+imgclass):
+       img_path=data_dir+"/"+imgclass+"/"+j
+       filename,ext=os.path.splitext(img_path)
+       if ext not in extensions:
+          print(ext,"invalid extension")
+
+data_dir
+
+#creating batches of images and
+#splitting the batches into train and validation
+tr,test=keras.utils.image_dataset_from_directory(
+data_dir,
+validation_split=0.1,
+labels="inferred",
+class_names=class_list,
+label_mode="int",
+subset="both",
+seed=100,
+color_mode="rgb",
+batch_size=32,
+image_size=(32,32),
+shuffle=True
+)
+
+tr
+6100/32
+len(tr)
+
+IMG_SHAPE=32
+count=0
+batch1=tr.as_numpy_iterator().next()
+
+#view first image
+batch1[0][0]
+
+#view label of first image
+batch1[1][0]
+
+len(batch1[1])
+
+#sesond image
+batch1[0][1]
+
+#label of second image
+batch1[1][1]
+
+#print images from a specific batch
+plt.figure(figsize=(10,10))
+for i in range(0,len(batch1[0])):
+    plt.subplot(8,4,i+1)
+    plt.imshow(batch1[0][i]/255)
+    plt.subplots_adjust(hspace=0.9)
+    plt.xlabel(class_list[batch1[1][i]])
+
+batches=tr.as_numpy_iterator()
+batches1=batches.next()
+batches2=batches.next()
+plt.imshow(batches1[0][1]/255)
+
+batches2[1][0]
+
+plt.figure(figsize=(10,10))
+for i in range(0,len(batches2[0])):
+    plt.subplot(8,4,i+1)
+    plt.subplots_adjust(hspace=0.9)
+    plt.imshow(batches2[0][i]/255)
+    plt.xlabel(class_list[batches2[1][i]])
+
+
+#model creation
+from keras import models,layers
+from keras.layers import Dense,Dropout,Conv2D,MaxPooling2D
+
+#size of the convolution filter should be smaller like 3x3
+model1=models.Sequential()
+
+input_layer=keras.Input(shape=(32,32,3))
+noise_layer=GaussianNoise(0.01)
+noise_layer=noise_layer(input_layer)
+
+aug_flip_layer=tf.keras.layers.RandomFlip("horizontal_and_vertical")
+
+aug_flip_layer=aug_flip_layer(input_layer)
+aug_rotate_layer=tf.keras.layers.RandomRotation(0.2)
+aug_rotate_layer=aug_rotate_layer(aug_flip_layer)
+aug_rescale_layer=tf.keras.layers.Rescaling(1/127.0, offset=-1)
+aug_rescale_layer=aug_rescale_layer(aug_flip_layer)
+
+conv_layer1=Conv2D(64,(3,3),activation="relu")
+conv_layer1=conv_layer1(aug_rescale_layer)
+pooling_layer1=MaxPooling2D(pool_size=(2,2))
+pooling_layer1=pooling_layer1(conv_layer1)
+conv_layer2=Conv2D(64,(3,3),activation="relu")
+conv_layer2=conv_layer2(pooling_layer1)
+pooling_layer2=MaxPooling2D(pool_size=(2,2))
+pooling_layer2=pooling_layer2(conv_layer2)
+pooling_layer2
+conv_layer3=Conv2D(64,(3,3),activation="relu")
+conv_layer3=conv_layer3(pooling_layer2)
+pooling_layer3=MaxPooling2D(pool_size=(2,2))
+pooling_layer3=pooling_layer3(conv_layer3)
+flat_layer=Flatten()
+flat_layer=flat_layer(conv_layer3)
+len(class_list)
+
+output_layer=Dense(53,activation="softmax")
+output_layer=output_layer(flat_layer)
+model1=keras.Model(inputs=input_layer,outputs=output_layer)
+model1.summary()
+
+
+#keras_earlystop = keras.callbacks.EarlyStopping(monitor='loss',mode='min',patience=
+#keras_model.fit(x,y,epochs=50,batch_size=16,callbacks=[keras_earlystop])
+#model1.fit(tr,epochs=100,batch_size=16,validation_data=test,callbacks=[keras_earlys
+
+
+
+# Compile the model
+model1.compile(optimizer="adam",
+               loss="sparse_categorical_crossentropy",
+               metrics=["accuracy"])
+
+# Define EarlyStopping callback
+keras_earlystop = keras.callbacks.EarlyStopping(
+    monitor='loss',
+    mode='min',
+    patience=5,
+    restore_best_weights=True
+)
+
+# Fit the model
+model1.fit(
+    tr,
+    epochs=100,
+    batch_size=16,
+    validation_data=test,
+    callbacks=[keras_earlystop]
+)
+
+import pickle
+f=open("/kaggle/working/card_image.pkl","wb")
+pickle.dump("model1",f)
+model1
+f.close()
+#read file
+f1=open("/kaggle/working/card_image.pkl","rb")
+#loading the model
+model=pickle.load(f1)
+model
+
+test_dir="/kaggle/input/cards-image-datasetclassification/test"
+
+test_new=keras.utils.image_dataset_from_directory(
+test_dir,
+labels="inferred",
+class_names=class_list,
+label_mode="int",
+seed=100,
+color_mode="rgb",
+batch_size=32,
+image_size=(32,32),
+shuffle=True
+)
+
+prediction=model1.predict(test_new)
+#prediction/ with test images
+prediction
+
+import numpy as np
+li_predict=list(prediction)
+type(li_predict)
+li_predict[0][0]
+
+#creating the list of class names from prbability
+label_idx=[]
+for i in range(0,len(li_predict)):
+
+    m=np.max(li_predict[i])
+    for j in range(0,len(li_predict[i])):
+       if li_predict[i][j]==m:
+        label_idx.append(j)
+
+batch_test=test.as_numpy_iterator()
+batch_test=batch_test.next()
+batch_test[0][2]
+
+#images with prediction labels
+li_actual=[]
+li_predict=[]
+plt.figure(figsize=(10,10))
+for i in range(0,len(batches2[0])):
+    plt.subplot(8,4,i+1)
+    plt.subplots_adjust(hspace=0.9)
+    plt.imshow(batch_test[0][i]/255)
+    plt.xlabel(class_list[batches2[1][i]])
+    plt.xlabel(class_list[label_idx[i]])
+    li_actual.append(class_list[batches2[1][i]])
+    li_predict.append(class_list[label_idx[i]])
+
+
+
+
+# Practical 3: PET classification using RESNET 
+
+# Step 0: Install fastai if not already installed
+# !pip install fastai --upgrade
+
+# Step 1: Import necessary libraries
+from fastai.vision.all import *
+import sklearn.metrics as skm
+
+# Step 2: Load Oxford Pets dataset
+path = untar_data(URLs.PETS)
+fnames = get_image_files(path/"images")
+pat = r'^(.*)_\d+.jpg$'
+
+# Step 3: Create DataLoaders
+dls = ImageDataLoaders.from_name_re(
+    path, fnames, pat, 
+    item_tfms=Resize(224),
+    bs=32
+)
+
+dls.show_batch()
+
+# Step 4: Create and train learner
+learn = vision_learner(
+    dls, 
+    models.resnet18, 
+    metrics=[accuracy],
+    model_dir="/kaggle/working/model/"
+)
+
+learn.fine_tune(3)  # Transfer learning using pretrained models
+
+# learn.fit(3)  # Trains all layers for 3 epochs, Training from scratch
+
+
+# Step 5: Evaluate with confusion matrix & classification report
+interp = ClassificationInterpretation.from_learner(learn)
+interp.plot_confusion_matrix(figsize=(10,10), dpi=60)
+
+# Print classification report (precision, recall, f1-score)
+print(interp.print_classification_report())
+
+# Step 6: Save model as pickle
+project_path = Path("my_pet_project")
+project_path.mkdir(exist_ok=True)
+learn.path = project_path
+learn.export("export.pkl")  # Saves to my_pet_project/export.pkl
+
+# Step 7: Load exported model
+learn_inf = load_learner("my_pet_project/export.pkl")
+
+# Step 8: Load unknown image and make prediction
+img_path = r"C:\Users\Purav Badani\Desktop\DataScience\Sem 4\DeepNeuralNetwork\Practicals\photo_dog.jpeg"
+img = PILImage.create(img_path)
+
+pred_class, pred_idx, probs = learn_inf.predict(img)
+
+print(f"Predicted species: {pred_class}")
+print(f"Confidence: {probs[pred_idx]:.4f}")
+
+# Show image with prediction
+img.show(title=f"Prediction: {pred_class}")
+
+
+
+
+
+
+
+# Practical 4 : RNN 
+
+# importing libraries
+
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import SimpleRNN, Dense
+
+text = """A clever rabbit, known for his quick thinking, lived in the forest, while a hungry fox was always on the lookout for a meal. 
+One day, the fox spotted the rabbit in an open field and approached him, hoping to catch him. 
+The rabbit, however, was not easily fooled. He promised the fox a field of juicy rabbits tomorrow if he would let him go today. 
+The fox, lured by the prospect of an easy meal, let the rabbit go.  
+The next day, the rabbit led the fox to a hilltop, pointing towards a field t"""
+
+
+len(text)
+
+
+# Creating unique set of characters
+set_text = set(text)
+
+li_text = list(set_text)
+li_text[0:7]
+
+li_text.sort()
+
+# Printing the sorted list of charecters
+sorted_text = li_text
+print(sorted_text)
+
+# Crrating a dict for encoding charecter to number
+
+list_index = {}
+for i in sorted_text:
+    idx = sorted_text.index(i)
+    list_index[i] = idx
+
+
+# Creating a dict for decodinf number to charecter
+
+index_char = {}
+for i in sorted_text:
+    idx = sorted_text.index(i)
+    index_char[idx] = i
+
+# Create a function to create the sequence code
+def create_seq(text,seq_len):
+    x_code = []
+    y_list = []
+    for i in range(0,len(text) - seq_len):
+        seq_code = []
+        seq = text[i:i + seq_len]
+        label = text[i + seq_len]
+
+        for j in seq:
+            seq_code.append(list_index[j])
+
+        x_code.append(seq_code)
+        y_list.append(label)
+        return x_code, y_list
+
+
+# Called the function with seq_len = 3
+
+seq_length = 3
+seq,lbl = create_seq(text,3)
+
+
+len(seq)
+
+label_index=[]
+for i in lbl:
+    label_index.append(list_index[i])
+
+len(label_index)
+
+x = np.array(seq)
+y = np.array(label_index)
+
+## One hot encoding
+x_one_hot = tf.one_hot(x, len(list_index))
+y_one_hot = tf.one_hot(y, len(list_index))
+
+x_one_hot.shape
+y_one_hot.shape
+
+# Model Creation
+model = Sequential()
+model.add(SimpleRNN(50, input_shape=(seq_length, len(list_index)), activation='relu'))
+model.add(Dense(len(list_index), activation='softmax'))
+#keras_earlystop
+
+model.compile(optimizer = 'adam', loss='categorical_crossentropy',metrics=['accuracy'])
+model.fit(x_one_hot, y_one_hot, epochs= 10)
+
+# Prediction
+test_text1 = "The rabbit led the fox to"
+
+predicted_text = []
+start_seq = test_text1
+
+generated_text = start_seq
+
+for i in range(0,10):
+    x = np.array([[list_index[x] for x in generated_text[-seq_lenght]]])
+    x_test_onehot = tf.one_hot(x,len(list_index))
+    prediction = model.predict(x_test_onehot, verbose=False)
+    next_index = np.argmax(prediction)
+    next_char = index_char[next_index]
+    generated_text += next_char
+    print(generated_text)
+
+# Importing libraries
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import SimpleRNN, Dense
+from tensorflow.keras.callbacks import EarlyStopping
+
+# Input text for training
+text = """In the heart of a vast jungle, a wise old elephant roamed the forest. He was known far and wide for his wisdom and gentle nature. 
+One day, a curious young monkey approached the elephant and asked, "What is the secret to a peaceful life?"
+The elephant smiled and replied, "The secret is simple: live in harmony with others, be kind, and always stay true to yourself."
+The monkey pondered the elephant's words and left, feeling wiser than before, ready to share his newfound knowledge with the rest of the jungle."""
+
+# Creating a unique set of characters from the text
+set_text = set(text)
+li_text = list(set_text)
+
+# Sorting the characters
+li_text.sort()
+
+# Creating a dict for encoding character to number
+list_index = {ch: idx for idx, ch in enumerate(li_text)}
+
+# Creating a dict for decoding number to character
+index_char = {idx: ch for idx, ch in enumerate(li_text)}
+
+# Function to create sequences for training
+def create_seq(text, seq_len):
+    x_code = []
+    y_list = []
+    for i in range(0, len(text) - seq_len):
+        seq_code = []
+        seq = text[i:i + seq_len]
+        label = text[i + seq_len]
+
+        for j in seq:
+            seq_code.append(list_index[j])
+
+        x_code.append(seq_code)
+        y_list.append(label)
+    
+    return x_code, y_list
+
+# Call the function with seq_len = 3
+seq_length = 3
+seq, lbl = create_seq(text, seq_length)
+
+# Convert labels to indices
+label_index = [list_index[i] for i in lbl]
+
+# Convert sequences and labels to numpy arrays
+x = np.array(seq)
+y = np.array(label_index)
+
+# One-hot encoding the input and output
+x_one_hot = tf.one_hot(x, len(list_index))
+y_one_hot = tf.one_hot(y, len(list_index))
+
+# Model creation using SimpleRNN
+model = Sequential()
+model.add(SimpleRNN(50, input_shape=(seq_length, len(list_index)), activation='relu'))
+model.add(Dense(len(list_index), activation='softmax'))
+
+# Add early stopping to prevent overfitting
+early_stopping = EarlyStopping(monitor='loss', patience=3)
+
+# Compile the model
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+# Train the model
+model.fit(x_one_hot, y_one_hot, epochs=100, callbacks=[early_stopping])
+
+# Generate text using the trained model
+test_text1 = "The monkey pondered"
+generated_text = test_text1
+
+# Generate next characters
+for i in range(0, 10):
+    x_input = np.array([[list_index[char] for char in generated_text[-seq_length:]]])
+    x_test_onehot = tf.one_hot(x_input, len(list_index))
+    prediction = model.predict(x_test_onehot, verbose=False)
+    next_index = np.argmax(prediction)
+    next_char = index_char[next_index]
+    generated_text += next_char
+    print(generated_text, end=" ")
+
+
+# Importing libraries
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import SimpleRNN, Dense
+from tensorflow.keras.callbacks import EarlyStopping
+
+# Input training text
+text = """In the heart of a vast jungle, a wise old elephant roamed the forest. He was known far and wide for his wisdom and gentle nature. 
+One day, a curious young monkey approached the elephant and asked, "What is the secret to a peaceful life?"
+The elephant smiled and replied, "The secret is simple: live in harmony with others, be kind, and always stay true to yourself."
+The monkey pondered the elephant's words and left, feeling wiser than before, ready to share his newfound knowledge with the rest of the jungle."""
+
+# Repeat text to increase training data
+text = text * 5
+
+# Create sorted character list and mappings
+chars = sorted(set(text))
+char_to_index = {ch: idx for idx, ch in enumerate(chars)}
+index_to_char = {idx: ch for ch, idx in char_to_index.items()}
+vocab_size = len(chars)
+
+# Create training sequences
+def create_seq(text, seq_len):
+    x_data, y_data = [], []
+    for i in range(len(text) - seq_len):
+        input_seq = [char_to_index[ch] for ch in text[i:i+seq_len]]
+        output_char = char_to_index[text[i+seq_len]]
+        x_data.append(input_seq)
+        y_data.append(output_char)
+    return np.array(x_data), np.array(y_data)
+
+# Sequence length
+seq_len = 10
+x, y = create_seq(text, seq_len)
+
+# One-hot encode inputs and outputs
+x_onehot = tf.one_hot(x, vocab_size)
+y_onehot = tf.one_hot(y, vocab_size)
+
+# Build the RNN model
+model = Sequential([
+    SimpleRNN(128, input_shape=(seq_len, vocab_size), activation='relu'),
+    Dense(vocab_size, activation='softmax')
+])
+
+# Compile the model
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+# Early stopping
+early_stop = EarlyStopping(monitor='loss', patience=3)
+
+# Train the model
+model.fit(x_onehot, y_onehot, epochs=100, callbacks=[early_stop])
+
+# Text generation function
+def generate_text(start_string, gen_length=100):
+    generated = start_string
+    for _ in range(gen_length):
+        # Take last seq_len chars from generated text
+        input_seq = generated[-seq_len:]
+        # Pad if needed
+        if len(input_seq) < seq_len:
+            input_seq = " " * (seq_len - len(input_seq)) + input_seq
+        input_encoded = [char_to_index[ch] for ch in input_seq]
+        x_input = tf.one_hot([input_encoded], vocab_size)
+        prediction = model.predict(x_input, verbose=0)[0]
+        
+        # Sample from predicted probabilities
+        next_index = np.random.choice(range(vocab_size), p=prediction)
+        next_char = index_to_char[next_index]
+        generated += next_char
+        print(next_char, end="")  # Print just the next char
+    print()  # Newline after generation
+
+# Run the text generator
+print("Generated Text:")
+generate_text("The monkey pondered", gen_length=200)
+
+# Importing libraries
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import SimpleRNN, Dense
+from tensorflow.keras.callbacks import EarlyStopping
+
+# Input training text (you can replace this with a larger text)
+text = """
+In the heart of a vast jungle, a wise old elephant roamed the forest. He was known far and wide for his wisdom and gentle nature. 
+One day, a curious young monkey approached the elephant and asked, "What is the secret to a peaceful life?"
+The elephant smiled and replied, "The secret is simple: live in harmony with others, be kind, and always stay true to yourself."
+The monkey pondered the elephant's words and left, feeling wiser than before, ready to share his newfound knowledge with the rest of the jungle.
+"""
+# Repeat text to make it longer
+text = text * 5
+
+# Character mappings
+chars = sorted(set(text))
+char_to_index = {ch: idx for idx, ch in enumerate(chars)}
+index_to_char = {idx: ch for ch, idx in char_to_index.items()}
+vocab_size = len(chars)
+
+# Create training sequences
+def create_seq(text, seq_len):
+    x_data, y_data = [], []
+    for i in range(len(text) - seq_len):
+        input_seq = [char_to_index[ch] for ch in text[i:i+seq_len]]
+        output_char = char_to_index[text[i+seq_len]]
+        x_data.append(input_seq)
+        y_data.append(output_char)
+    return np.array(x_data), np.array(y_data)
+
+# Sequence length
+seq_len = 10
+x, y = create_seq(text, seq_len)
+
+# One-hot encode inputs and outputs
+x_onehot = tf.one_hot(x, vocab_size)
+y_onehot = tf.one_hot(y, vocab_size)
+
+# Build the model with SimpleRNN
+model = Sequential([
+    SimpleRNN(128, input_shape=(seq_len, vocab_size), activation='relu'),
+    Dense(vocab_size, activation='softmax')
+])
+
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+# Early stopping
+early_stop = EarlyStopping(monitor='loss', patience=10, restore_best_weights=True)
+
+# Train the model
+model.fit(x_onehot, y_onehot, epochs=300, callbacks=[early_stop])
+
+# Temperature-controlled sampling function
+def sample(preds, temperature=1.0):
+    preds = np.asarray(preds).astype("float64")
+    preds = np.log(preds + 1e-8) / temperature
+    exp_preds = np.exp(preds)
+    preds = exp_preds / np.sum(exp_preds)
+    return np.random.choice(len(preds), p=preds)
+
+# Text generation
+def generate_text(start_string, gen_length=50, temperature=0.7):
+    generated = start_string
+    for _ in range(gen_length):
+        input_seq = generated[-seq_len:]
+        if len(input_seq) < seq_len:
+            input_seq = " " * (seq_len - len(input_seq)) + input_seq
+        input_encoded = [char_to_index[ch] for ch in input_seq]
+        x_input = tf.one_hot([input_encoded], vocab_size)
+        prediction = model.predict(x_input, verbose=0)[0]
+        next_index = sample(prediction, temperature)
+        next_char = index_to_char[next_index]
+        generated += next_char
+    return generated
+
+# Generate and print sample output
+print("Generated Text:\n")
+output = generate_text("The monkey pondered", gen_length=50, temperature=0.6)
+print(output)
+
+
+
+
+
+# Practical 5 : LSTM (Time series) 
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from sklearn.preprocessing import MinMaxScaler
+from keras.models import Sequential
+from keras.layers import Dense, LSTM
+
+# Load dataset
+path = r"C:\Users\Purav Badani\Desktop\DataScience\Sem 4\DeepNeuralNetwork\Practicals\AirPassengers.csv"
+df = pd.read_csv(path)
+print(df.head(10))
+df = df[['#Passengers']]
+dataset = df.values.astype('float32')
+
+#Practical 5: LSTM - Time series prediction - Simplified
+
+
+# Normalize the dataset
+scaler = MinMaxScaler(feature_range=(0, 1))
+dataset = scaler.fit_transform(dataset)
+
+# Split into train and test sets
+train_size = int(len(dataset) * 0.67)
+test_size = len(dataset) - train_size
+train, test = dataset[0:train_size], dataset[train_size:len(dataset)]
+
+# Convert an array of values into a dataset matrix
+def create_dataset(dataset, look_back=1):
+    dataX, dataY = [], []
+    for i in range(len(dataset) - look_back - 1):
+        a = dataset[i:(i + look_back), 0]
+        dataX.append(a)
+        dataY.append(dataset[i + look_back, 0])
+    return np.array(dataX), np.array(dataY)
+
+look_back = 3
+trainX, trainY = create_dataset(train, look_back)
+testX, testY = create_dataset(test, look_back)
+
+# Reshape input to be [samples, time steps, features]
+trainX = np.reshape(trainX, (trainX.shape[0], 1, trainX.shape[1]))
+testX = np.reshape(testX, (testX.shape[0], 1, testX.shape[1]))
+
+# Create and fit the LSTM network
+model = Sequential()
+model.add(LSTM(4, input_shape=(1, look_back)))
+model.add(Dense(1))
+model.compile(loss='mean_squared_error', optimizer='adam')
+model.fit(trainX, trainY, epochs=100, batch_size=1, verbose=2)
+
+# Make predictions
+trainPredict = model.predict(trainX)
+testPredict = model.predict(testX)
+
+# Invert predictions
+trainPredict = scaler.inverse_transform(trainPredict)
+trainY = scaler.inverse_transform([trainY])
+testPredict = scaler.inverse_transform(testPredict)
+testY = scaler.inverse_transform([testY])
+
+# Calculate root mean squared error
+trainScore = np.sqrt(np.mean((trainPredict[:, 0] - trainY[0])**2))
+print(f'Train Score: {trainScore:.2f} RMSE')
+testScore = np.sqrt(np.mean((testPredict[:, 0] - testY[0])**2))
+print(f'Test Score: {testScore:.2f} RMSE')
+
+# Shift train predictions for plotting
+trainPredictPlot = np.empty_like(dataset)
+trainPredictPlot[:, :] = np.nan
+trainPredictPlot[look_back:len(trainPredict) + look_back, 0] = trainPredict[:, 0]
+
+# Shift test predictions for plotting
+testPredictPlot = np.empty_like(dataset)
+testPredictPlot[:, :] = np.nan
+testPredictPlot[len(trainPredict) + (look_back * 2) + 1:len(dataset) - 1, 0] = testPredict[:, 0]
+
+# Plot baseline and predictions
+plt.plot(scaler.inverse_transform(dataset), label='Original Data')
+plt.plot(trainPredictPlot, label='Train Prediction')
+plt.plot(testPredictPlot, label='Test Prediction')
+plt.legend()
+plt.show()
+
+
+
+
+
+
+
+
+# Practical 6: Auto encoder
+
+import tensorflow as tf
+from tensorflow import keras
+from  keras import layers, models, Model, datasets, losses
+from keras.layers import Dense, Flatten
+import matplotlib.pyplot as plt
+#!pip install opencv-python
+
+# Importing the dataset
+(x_tr,y_tr), (x_test,y_test) = keras.datasets.mnist.load_data()
+x_tr[0]
+
+y_tr[0]
+
+plt.title(y_tr[0])
+plt.imshow(x_tr[0])
+
+x_tr.shape
+
+import matplotlib.pyplot as plt
+
+imgindex = 0
+plt.figure(figsize=(8, 8)) 
+
+for i in range(0, 32):
+    imgindex += 1
+    plt.subplot(8, 4, imgindex)
+    plt.imshow(x_tr[i] / 255)
+    plt.title(str(y_tr[i]), fontsize=10)
+    #plt.xlabel(y_tr[i])
+    plt.axis('off')  # Hides axis ticks
+    plt.subplots_adjust(hspace=1.0, wspace=0.5)
+
+#Encoder Model
+# Creating an encoder model
+input_layer = keras.Input(shape=(x_tr.shape[1], x_tr.shape[2]))
+
+flattened_layer = keras.layers.Flatten()
+flattened_layer = flattened_layer(input_layer)
+
+flattened_layer.shape
+# x_tr was 3 dimentional. Now flattered layer is 1 dimensional
+
+hidden_size = 100
+hidden_layer = keras.layers.Dense(hidden_size, activation = "relu")
+hidden_layer = hidden_layer(flattened_layer)
+
+hidden_layer.shape
+
+latent_size = 50
+latent_layer = keras.layers.Dense(latent_size, activation="relu")
+latent_layer = latent_layer(hidden_layer)
+latent_layer.shape
+
+encoder_model = Model(inputs=input_layer, outputs=latent_layer)
+encoder_model.summary()
+
+
+#Decoder Model
+decoder_input_layer = keras.layers.Input(shape = encoder_model.output.shape)
+
+encoder_model.output.shape
+
+decoder_input_layer.shape
+
+decoder_hidden_layer = keras.layers.Dense(hidden_size,activation="relu")
+
+decoder_hidden_layer = decoder_hidden_layer(decoder_input_layer)
+
+encoder_model.layers[1].output.shape
+
+decoder_flat_layer = keras.layers.Dense(encoder_model.layers[1].output.shape[1], activation = "relu")
+
+decoder_flat_layer = decoder_flat_layer(decoder_hidden_layer)
+
+decoder_flat_layer.shape
+x_tr.shape
+
+decoder_output_layer = keras.layers.Reshape(x_tr.shape[1:])
+
+decoder_output_layer = decoder_output_layer(decoder_flat_layer)
+
+decoder_output_layer.shape
+
+decoder_model = Model(inputs = decoder_input_layer, outputs = decoder_output_layer, name = "decoder")
+
+decoder_model.summary()
+
+#Auto encoder decoder Model
+encoder_model.input
+encoder_model.output
+
+import numpy as np
+encoder_output = encoder_model.output[:, np.newaxis, :]
+
+autoencoder = Model(inputs = encoder_model.input, outputs = decoder_model(encoder_output))
+
+autoencoder.compile(optimizer="adam", loss=losses.MeanSquaredError())
+
+keras_model = autoencoder.fit(x_tr, x_tr,epochs=30, batch_size=64)
+
+autoencoder.predict(np.expand_dims(x_tr[0],0))
+
+#expand_dims is used to conver the image from 2 to 3 dimension
+from random import randint
+
+fig, axs = plt.subplots(5,2,figsize=(10,15))
+for i in range(5):
+  
+  sample1 = x_tr[randint(0,x_tr.shape[0])]
+  plt.subplots_adjust(wspace=0.2,hspace=0.9)
+  axs[i][0].set_xlabel("original image")
+  axs[i][0].imshow(sample1)
+  axs[i][1].set_xlabel("encoded decoded img")
+  axs[i][1].imshow(autoencoder.predict(np.expand_dims(sample1,0))[0])
+
+
+
+
+
+
+
+
+
+# Practical 9: Next sentence prediction using BERT 
+
+
+#import os
+#os.environ["TRANSFORMERS_NO_TF"] = "1"
+
+# IMPORTS
+from transformers import BertTokenizer, BertForNextSentencePrediction
+from datasets import Dataset
+from sklearn.metrics import accuracy_score
+import torch
+
+# Initialize tokenizer
+tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+
+# Chemistry text (Wikipedia style)
+text = """
+In chemistry, an acid is a molecule or ion capable of donating a proton (hydrogen ion H⁺), or, alternatively, capable of forming a covalent bond with an electron pair (a Lewis acid). 
+The first category of acids is also called Brønsted–Lowry acids. 
+In aqueous solution, acids increase the concentration of H⁺ ions. 
+Bases are substances that can accept protons or donate a pair of electrons. 
+According to the Brønsted–Lowry theory, bases accept protons from acids. 
+An acid and a base that differ by a proton are called a conjugate acid-base pair. 
+The strength of an acid is measured by its acid dissociation constant (pKa). 
+Strong acids dissociate completely in water, while weak acids do not. 
+Common strong acids include hydrochloric acid (HCl) and sulfuric acid (H₂SO₄). 
+Bases include substances like ammonia (NH₃) and hydroxide ions (OH⁻). 
+Neutralization is the chemical reaction between an acid and a base to produce water and a salt.
+"""
+
+# Sentence pairs (sentence1, sentence2, label: 1=next, 0=unrelated)
+sentences = [
+    ("In chemistry, an acid is a molecule or ion capable of donating a proton (hydrogen ion H⁺), or, alternatively, capable of forming a covalent bond with an electron pair (a Lewis acid).",
+     "The first category of acids is also called Brønsted–Lowry acids.", 1),
+    
+    ("The first category of acids is also called Brønsted–Lowry acids.",
+     "In aqueous solution, acids increase the concentration of H⁺ ions.", 1),
+    
+    ("In aqueous solution, acids increase the concentration of H⁺ ions.",
+     "Bases are substances that can accept protons or donate a pair of electrons.", 1),
+    
+    ("Bases are substances that can accept protons or donate a pair of electrons.",
+     "According to the Brønsted–Lowry theory, bases accept protons from acids.", 1),
+    
+    ("According to the Brønsted–Lowry theory, bases accept protons from acids.",
+     "An acid and a base that differ by a proton are called a conjugate acid-base pair.", 1),
+    
+    ("An acid and a base that differ by a proton are called a conjugate acid-base pair.",
+     "The strength of an acid is measured by its acid dissociation constant (pKa).", 1),
+    
+    ("The strength of an acid is measured by its acid dissociation constant (pKa).",
+     "Strong acids dissociate completely in water, while weak acids do not.", 1),
+    
+    ("Strong acids dissociate completely in water, while weak acids do not.",
+     "Common strong acids include hydrochloric acid (HCl) and sulfuric acid (H₂SO₄).", 1),
+    
+    ("Common strong acids include hydrochloric acid (HCl) and sulfuric acid (H₂SO₄).",
+     "Bases include substances like ammonia (NH₃) and hydroxide ions (OH⁻).", 1),
+    
+    ("Bases include substances like ammonia (NH₃) and hydroxide ions (OH⁻).",
+     "Neutralization is the chemical reaction between an acid and a base to produce water and a salt.", 1),
+    
+    # Unrelated pairs
+    ("In chemistry, an acid is a molecule or ion capable of donating a proton (hydrogen ion H⁺), or, alternatively, capable of forming a covalent bond with an electron pair (a Lewis acid).",
+     "The melting point of iron is 1538°C.", 0),
+    
+    ("Strong acids dissociate completely in water, while weak acids do not.",
+     "The periodic table consists of rows called periods.", 0),
+    
+    ("Bases are substances that can accept protons or donate a pair of electrons.",
+     "Avogadro's number is 6.022 × 10^23.", 0),
+    
+    ("Neutralization is the chemical reaction between an acid and a base to produce water and a salt.",
+     "Oxygen is a diatomic molecule.", 0),
+    
+    ("Common strong acids include hydrochloric acid (HCl) and sulfuric acid (H₂SO₄).",
+     "The molecular weight of glucose is approximately 180 g/mol.", 0),
+]
+
+# Convert to Huggingface Dataset
+dataset = Dataset.from_dict({
+    "sentence1": [s[0] for s in sentences],
+    "sentence2": [s[1] for s in sentences],
+    "label": [s[2] for s in sentences]
+})
+
+# Train/test split (80-20)
+train_test_split = dataset.train_test_split(test_size=0.2)
+train_dataset = train_test_split["train"]
+test_dataset = train_test_split["test"]
+
+# Save test sentences and labels before tokenization for evaluation
+test_sent1 = test_dataset["sentence1"]
+test_sent2 = test_dataset["sentence2"]
+test_labels = test_dataset["label"]
+
+# Tokenize function for dataset mapping
+def tokenize_function(examples):
+    return tokenizer(examples["sentence1"], examples["sentence2"], truncation=True, padding=True)
+
+# Tokenize datasets
+train_dataset = train_dataset.map(tokenize_function, batched=True)
+test_dataset = test_dataset.map(tokenize_function, batched=True)
+
+# Load pre-trained BERT NSP model
+model = BertForNextSentencePrediction.from_pretrained("bert-base-uncased")
+model.eval()  # Set model to evaluation mode
+
+# Prepare test inputs
+encoding = tokenizer(test_sent1, test_sent2, truncation=True, padding=True, return_tensors="pt")
+
+# Inference (no gradient needed)
+with torch.no_grad():
+    outputs = model(**encoding)
+    logits = outputs.logits
+    preds = torch.argmax(logits, dim=1).tolist()
+
+# Compute accuracy
+acc = accuracy_score(test_labels, preds)
+print(f"\nEvaluation Accuracy: {acc:.4f}")
+
+# Show predictions vs true labels
+for i, (pred, label) in enumerate(zip(preds, test_labels)):
+    print(f"Sample {i+1}: Prediction={pred} Label={label}")
+Map:   0%|          | 0/12 [00:00<?, ? examples/s]
+Map:   0%|          | 0/3 [00:00<?, ? examples/s]
+Evaluation Accuracy: 0.6667
+Sample 1: Prediction=0 Label=0
+Sample 2: Prediction=0 Label=0
+Sample 3: Prediction=1 Label=0
+ 
+
+
+
+
+
+#Practical 10: Generate Sin wave pattern with GAN
+
+# Install PyTorch 
+# !pip install torch
+ # Imports
+ import torch
+ from torch import nn
+ import math
+ import matplotlib.pyplot as plt
+ # Generate training data
+ train_data_length = 1024
+ train_data = torch.zeros((train_data_length, 2))
+ train_data[:, 0] = 2 * math.pi * torch.rand(train_data_length)
+ train_data[:, 1] = torch.sin(train_data[:, 0])
+ train_labels = torch.zeros(train_data_length)
+ # Create training set
+ train_set = [
+    (train_data[i], train_labels[i]) for i in range(train_data_length)
+ ]
+ # Plot the data
+ plt.plot(train_data[:, 0], train_data[:, 1], ".")
+ plt.show()
+ # DataLoader
+ batch_size = 32
+ train_loader = torch.utils.data.DataLoader(
+    train_set, batch_size=batch_size, shuffle=True
+ )
+ # Discriminator model
+ class Discriminator(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.model = nn.Sequential(
+            nn.Linear(2, 256),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            nn.Linear(256, 128),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            nn.Linear(64, 1),
+            nn.Sigmoid()
+        )
+    def forward(self, x):
+        output = self.model(x)
+        return output
+ discriminator = Discriminator()
+
+ # Generator model
+ class Generator(nn.Module):
+    def __init__(self):
+          
+      super().__init__()
+      self.model = nn.Sequential(
+          nn.Linear(2, 16),
+          nn.ReLU(),
+          nn.Linear(16, 32),
+          nn.ReLU(),
+          nn.Linear(32, 2)
+       )
+ 
+    def forward(self, x):
+      output = self.model(x)
+      return output
+
+ generator = Generator()
+
+# Optimizers and loss function
+lr = 0.001
+num_epochs = 300
+loss_function = nn.BCELoss()
+
+optimizer_discriminator = torch.optim.Adam(discriminator.parameters(), lr=lr)
+optimizer_generator = torch.optim.Adam(generator.parameters(), lr=lr)
+
+# Training loop
+for epoch in range(num_epochs):
+    for n, (real_samples, _) in enumerate(train_loader):
+        # Data for training the discriminator
+        real_samples_labels = torch.ones((batch_size, 1))
+        latent_space_samples = torch.randn((batch_size, 2))
+        generated_samples = generator(latent_space_samples)
+        generated_samples_labels = torch.zeros((batch_size, 1))
+
+        all_samples = torch.cat((real_samples, generated_samples))
+        all_samples_labels = torch.cat((real_samples_labels, generated_samples_labels))
+
+        # Training the discriminator
+        discriminator.zero_grad()
+        output_discriminator = discriminator(all_samples)
+        loss_discriminator = loss_function(output_discriminator, all_samples_labels)
+        loss_discriminator.backward()
+        optimizer_discriminator.step()
+
+        # Data for training the generator
+        latent_space_samples = torch.randn((batch_size, 2))
+
+        # Training the generator
+        generator.zero_grad()
+        generated_samples = generator(latent_space_samples)
+        output_discriminator_generated = discriminator(generated_samples)
+        loss_generator = loss_function(output_discriminator_generated, real_samples_labels)
+        loss_generator.backward()
+        optimizer_generator.step()
+
+    # Show loss every 10 epochs
+    if epoch % 10 == 0:
+        print(f"Epoch: {epoch} Loss D.: {loss_discriminator.item():.4f}")
+        print(f"Epoch: {epoch} Loss G.: {loss_generator.item():.4f}")
+
+# Final samples from generator (optional visualization)
+latent_space_samples = torch.randn(100, 2)
+generated_samples = generator(latent_space_samples).detach()
+
+plt.plot(generated_samples[:, 0], generated_samples[:, 1], ".")
+plt.title("Generated Samples")
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
