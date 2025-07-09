@@ -1,0 +1,2200 @@
+# Web scrapping
+# EDA
+# Text Preprocessing
+# Sentiment Analysis
+# machine learning
+# clustering algorithms
+# topic modelling
+# NER
+# BERT
+
+
+
+
+
+
+
+## Practical 1: Web Scrapping
+
+
+import requests
+from bs4 import BeautifulSoup
+
+url = "https://www.scobserver.in/cases/jarnail-singh-v-lacchmi-narain-gupta-reservation-in-promotion-case-background/"
+soup = BeautifulSoup(requests.get(url).text, 'html.parser')
+
+title = soup.select_one('div.single-cases__header').get_text(strip=True, separator='\n')
+key_issues = soup.select_one('div.single-cases__key-issues').get_text(strip=True, separator='\n')
+desc = soup.select_one('div.single__body.single-cases__body').get_text(strip=True, separator='\n')
+parties = soup.select_one('div.single-cases__col-2').get_text(strip=True, separator='\n')
+judges = soup.select_one('div.single-cases__col-1').get_text(strip=True, separator='\n')
+
+case_number = None
+for p in soup.select_one('div.single-cases__col-3').find_all('p'):
+    if "Case Number:" in p.text:
+        case_number = p.text.replace("Case Number:", "").strip()
+        break
+
+print("Case Number:", case_number)
+print("\nParties:", parties)
+print("\nJudges:", judges)
+print("\nKey Issues:", key_issues)
+print("\nDescription:", desc)
+
+
+
+
+
+
+
+
+
+# Practical 2 Exploratory Data Analysis
+
+import pandas as pd 
+import matplotlib.pyplot as plt 
+import seaborn as sns 
+path = r"C:\Users\Purav Badani\Desktop\DataScience\Sem 4\LegalAnalytics\Practicals\crime_dataset_india.csv" 
+df = pd.read_csv(path) 
+df.head() 
+
+# 1. Shape of DataSet 
+# ============================= 
+print("Shape of dataset:", df.shape) 
+ 
+# 2. Data Types 
+print("\nData Types:\n", df.dtypes)
+
+#3. Missing Values 
+print("\nMissing values:\n", df.isnull().sum()) 
+
+# 4. Summary Statistics 
+print("\nSummary Statistics:\n", df.describe()) 
+
+# Calculate mean, median, and mode for numerical columns 
+mean_values = df.mean(numeric_only=True) 
+print ("\n Mean Values:\n", mean_values) 
+print ("--------------------------------") 
+median_values = df.median(numeric_only=True) 
+print ("\n Mean Values:\n", median_values) 
+print ("--------------------------------") 
+mode_values = df.mode(numeric_only=True).iloc[0] 
+print ("\n Mode Values:\n", mode_values) 
+
+#Convert date columns to datetime 
+df['Date Reported'] = pd.to_datetime(df['Date Reported'], errors='coerce') 
+df['Date of Occurrence'] = pd.to_datetime(df['Date of Occurrence'], errors='coerce') 
+df['Date Case Closed'] = pd.to_datetime(df['Date Case Closed'], errors='coerce')
+
+#Top 10 cities by number of crimes 
+plt.figure(figsize=(12, 6)) 
+df['City'].value_counts().head(10).plot(kind='bar') 
+plt.title("Top 10 Cities by Number of Crimes") 
+plt.ylabel("Number of Reports") 
+plt.xlabel("City") 
+plt.xticks(rotation=45) 
+plt.tight_layout() 
+plt.show() 
+
+# Most common crime types 
+plt.figure(figsize=(12, 6)) 
+df['Crime Description'].value_counts().head(10).plot(kind='bar', color='coral') 
+plt.title("Top 10 Crime Types") 
+plt.ylabel("Number of Reports") 
+plt.xlabel("Crime Description") 
+plt.xticks(rotation=45) 
+plt.tight_layout() 
+plt.show() 
+
+# Victim Gender distribution 
+plt.figure(figsize=(6, 4)) 
+sns.countplot(data=df, x='Victim Gender', palette='Set2') 
+plt.title("Victim Gender Distribution") 
+plt.show() 
+
+#Weapon used 
+plt.figure(figsize=(10, 5)) 
+df['Weapon Used'].value_counts().plot(kind='bar', color='skyblue') 
+plt.title("Weapons Used in Crimes") 
+plt.xticks(rotation=45) 
+plt.tight_layout() 
+plt.show()
+
+# Victim Age distribution by Gender 
+plt.figure(figsize=(10, 6)) 
+sns.boxplot(data=df, x='Victim Gender', y='Victim Age') 
+plt.title("Victim Age by Gender") 
+plt.show()
+
+
+#Crime Heatmap by City and Crime Type 
+city_crime_pivot = df.pivot_table(index='City', columns='Crime Description', aggfunc='size', fill_value=0) 
+plt.figure(figsize=(14, 10)) 
+sns.heatmap(city_crime_pivot, cmap='Reds', linewidths=0.5) 
+plt.title("Crime Frequency by City and Crime Type") 
+plt.xlabel("Crime Type") 
+plt.ylabel("City") 
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+#Practical 3: Text Preprocessing
+
+import nltk
+import string
+import re
+from nltk.tokenize import word_tokenize, sent_tokenize
+from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer, SnowballStemmer, LancasterStemmer, WordNetLemmatizer
+
+# Download required resources
+nltk.download('punkt')
+nltk.download('wordnet')
+nltk.download('stopwords')
+
+# Sample legal text
+text = """Legal texts encompass a #variety of documents related to law,
+including statutes, case law, legal treatises, and agreements.
+They are characterized by their precision, clarity, and formality,
+aiming to establish and enforce rules and obligations."""
+
+# Step 1: Sentence Tokenization
+print("\n--- Sentence Tokenization ---")
+for i, sent in enumerate(sent_tokenize(text), 1):
+    print(f"Sentence {i}: {sent}")
+
+# Step 2: Word Tokenization
+print("\n--- Word Tokenization ---")
+words = word_tokenize(text)
+print("Words:", words)
+
+# Step 3: Remove Stopwords and Punctuation
+stop_words = set(stopwords.words('english'))
+
+filtered_words = [
+    word for word in words
+    if word.lower() not in stop_words and word not in string.punctuation
+]
+print("\n--- After Removing Stopwords and Punctuation ---")
+print("Filtered Words:", filtered_words)
+
+# Remove special characters inside words
+cleaned_words = [
+    re.sub(r'[^a-zA-Z]', '', word) for word in filtered_words
+]
+
+# Remove empty strings that resulted from cleaning
+cleaned_words = [word for word in cleaned_words if word]
+print("\n--- After Removing Special Characters ---")
+print("Cleaned Words:", cleaned_words)
+
+# Step 4: Stemming
+print("\n--- Stemming Results ---")
+ps = PorterStemmer()
+snowball = SnowballStemmer("english")
+lancaster = LancasterStemmer()
+
+print("\nPorter Stemmer:")
+print([ps.stem(word) for word in cleaned_words])
+
+print("\nSnowball Stemmer:")
+print([snowball.stem(word) for word in cleaned_words])
+
+print("\nLancaster Stemmer:")
+print([lancaster.stem(word) for word in cleaned_words])
+
+# Step 5: Lemmatization
+print("\n--- Lemmatization ---")
+lemmatizer = WordNetLemmatizer()
+lemmatized_words = [
+    lemmatizer.lemmatize(word, pos='v') for word in cleaned_words
+]
+print("Lemmatized Words:", lemmatized_words)
+
+
+
+
+
+
+
+
+
+
+
+
+# Practical 4 Sentiment Analysis
+
+# Install if missing:
+# pip install textblob vaderSentiment nltk
+
+import pandas as pd
+import nltk
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+import re
+from textblob import TextBlob
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Download NLTK resources once
+for res in ['stopwords', 'wordnet', 'omw-1.4', 'punkt']:
+    nltk.download(res)
+
+# Step 1: Sample legal texts
+texts = [
+    "The court's decision was a clear victory for the plaintiffs, who had suffered significant injustice.",
+    "The dissenting opinion strongly criticized the majority's flawed logic and its potential negative impact.",
+    "After careful consideration of all arguments, the court found no basis for the defendant's appeal.",
+    "The appellant presented compelling evidence; however, it was ultimately deemed insufficient.",
+    "The settlement agreement reached by the parties represents a fair and equitable resolution to this protracted dispute.",
+    "The judge's remarks were surprisingly lenient given the severity of the crime.",
+    "The legal team argued persuasively, leading to a favorable outcome for their client.",
+    "Despite the initial optimism, the case took an unexpected turn for the worse.",
+    "The ruling was met with widespread approval from legal scholars.",
+    "There was considerable doubt surrounding the validity of the evidence presented."
+]
+
+# Put into DataFrame
+df = pd.DataFrame({'text': texts})
+
+# Step 2: Preprocess
+stop_words = set(stopwords.words('english'))
+lemmatizer = WordNetLemmatizer()
+
+def preprocess(text):
+    text = re.sub(r"[^\w\s-]", "", text.lower())
+    words = [lemmatizer.lemmatize(w) for w in text.split() if w not in stop_words]
+    return " ".join(words)
+
+df['clean'] = df['text'].apply(preprocess)
+
+# Step 3: Sentiment analysis
+vader = SentimentIntensityAnalyzer()
+
+df['textblob_polarity'] = df['clean'].apply(lambda x: TextBlob(x).sentiment.polarity)
+df['vader_compound'] = df['clean'].apply(lambda x: vader.polarity_scores(x)['compound'])
+
+# Display results
+print(df[['text', 'textblob_polarity', 'vader_compound']])
+
+# Correlation
+corr = df['textblob_polarity'].corr(df['vader_compound'])
+print(f"\nCorrelation between TextBlob and VADER: {corr:.3f}")
+
+# Scatter Plot
+plt.figure(figsize=(8, 5))
+sns.scatterplot(data=df, x='textblob_polarity', y='vader_compound')
+plt.title("TextBlob vs VADER Sentiment")
+plt.xlabel("TextBlob Polarity")
+plt.ylabel("VADER Compound")
+plt.grid(True)
+plt.show()
+
+# Histograms
+plt.figure(figsize=(12, 4))
+plt.subplot(1, 2, 1)
+sns.histplot(df['textblob_polarity'], kde=True)
+plt.title("TextBlob Polarity Distribution")
+plt.subplot(1, 2, 2)
+sns.histplot(df['vader_compound'], kde=True, color='orange')
+plt.title("VADER Compound Distribution")
+plt.tight_layout()
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Practical 5:  machine learning model 
+
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import OneHotEncoder, LabelEncoder
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# -----------------------------------
+# 1. Create Data
+# -----------------------------------
+data = pd.DataFrame({
+    'Jurisdiction': np.random.choice(['Federal', 'State', 'Local'], 1000),
+    'Case_Type': np.random.choice(['Civil', 'Criminal', 'Traffic'], 1000),
+    'Plaintiff_Type': np.random.choice(['Individual', 'Company', 'Government'], 1000),
+    'Defendant_Type': np.random.choice(['Company', 'Individual'], 1000),
+    'Judge': np.random.choice(['A', 'B', 'C'], 1000),
+    'Outcome': np.random.choice(['Won', 'Lost', 'Settled'], 1000)
+})
+
+# -----------------------------------
+# 2. Encode Data
+# -----------------------------------
+X = data.drop('Outcome', axis=1)
+y = data['Outcome']
+
+# One-hot encode features
+ohe = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
+X_encoded = ohe.fit_transform(X)
+X_encoded = pd.DataFrame(X_encoded, columns=ohe.get_feature_names_out(X.columns))
+
+# Label encode target
+le = LabelEncoder()
+y_encoded = le.fit_transform(y)
+
+# -----------------------------------
+# 3. Split
+# -----------------------------------
+X_train, X_test, y_train, y_test = train_test_split(
+    X_encoded, y_encoded, test_size=0.2, random_state=42, stratify=y_encoded
+)
+
+# -----------------------------------
+# 4. Train & Evaluate
+# -----------------------------------
+models = {
+    'Logistic Regression': LogisticRegression(random_state=42, solver='liblinear'),
+    'Decision Tree': DecisionTreeClassifier(random_state=42)
+}
+
+for name, model in models.items():
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+    acc = accuracy_score(y_test, y_pred)
+
+    print(f"\n{name}")
+    print(f"Accuracy: {acc:.2f}")
+    print(classification_report(y_test, y_pred, target_names=le.classes_))
+
+    cm = confusion_matrix(y_test, y_pred)
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+                xticklabels=le.classes_,
+                yticklabels=le.classes_)
+    plt.title(f"{name} Confusion Matrix")
+    plt.xlabel("Predicted")
+    plt.ylabel("Actual")
+    plt.show()
+
+
+
+
+
+
+
+
+
+
+
+# Practical 6 clustering algorithms
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
+import nltk
+import re
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+
+# Download NLTK resources (runs only if missing)
+for resource in ['stopwords', 'wordnet']:
+    nltk.download(resource, quiet=True)
+
+# -------------------------------------
+# 1. Data
+# -------------------------------------
+documents = [
+    "The landlord must provide a safe and habitable living environment.",
+    "The employee is entitled to severance pay upon termination.",
+    "This agreement includes a confidentiality clause to protect sensitive information.",
+    "The contractor shall complete the work by the specified deadline.",
+    "In case of breach, the aggrieved party may seek damages.",
+    "The merger agreement must be approved by the shareholders.",
+    "The plaintiff alleges that the defendant breached the contract.",
+    "This lease agreement is valid for a term of one year.",
+    "The arbitration process shall be conducted in accordance with the rules of the American Arbitration Association.",
+    "The parties acknowledge that they have read and understood the terms of this agreement.",
+    "The insurance policy covers damages resulting from natural disasters."
+]
+
+# -------------------------------------
+# 2. Preprocessing Function
+# -------------------------------------
+stop_words = set(stopwords.words('english'))
+lemmatizer = WordNetLemmatizer()
+
+def preprocess(text):
+    text = re.sub(r'[^a-zA-Z]', ' ', text.lower())
+    words = [lemmatizer.lemmatize(w) for w in text.split() if w not in stop_words]
+    return " ".join(words)
+
+# Preprocess all docs
+clean_docs = [preprocess(d) for d in documents]
+
+# -------------------------------------
+# 3. TF-IDF Vectorization
+# -------------------------------------
+tfidf = TfidfVectorizer()
+X = tfidf.fit_transform(clean_docs)
+
+# -------------------------------------
+# 4. KMeans Clustering
+# -------------------------------------
+kmeans = KMeans(n_clusters=3, random_state=42)
+labels = kmeans.fit_predict(X)
+
+# -------------------------------------
+# 5. PCA for Visualization
+# -------------------------------------
+X_pca = PCA(n_components=2).fit_transform(X.toarray())
+
+plt.figure(figsize=(6,5))
+sns.scatterplot(x=X_pca[:,0], y=X_pca[:,1], hue=labels, palette="bright", s=80)
+plt.title("Legal Document Clusters (PCA Visualized)")
+plt.grid(True)
+plt.show()
+
+# -------------------------------------
+# 6. Show Clusters
+# -------------------------------------
+cluster_df = pd.DataFrame({'Document': documents, 'Cluster': labels})
+print(cluster_df)
+
+
+
+
+
+
+
+
+
+
+# Practical 7: Topic Modelling - LDA
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import re
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.decomposition import LatentDirichletAllocation
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+import nltk
+
+# Download NLTK resources if missing
+for res in ['stopwords', 'wordnet']:
+    nltk.download(res, quiet=True)
+
+# ----------------------------------------
+# 1. Data
+# ----------------------------------------
+documents = [
+    "The agreement shall be governed by the laws of the State of California.",
+    "This contract is subject to the jurisdiction of New York courts.",
+    "Parties must comply with the GDPR requirements for data protection.",
+    "Any dispute arising shall be resolved through arbitration in London.",
+    "The lessee agrees to maintain the property in good condition.",
+    "Data must be encrypted in accordance with HIPAA regulations.",
+    "The defendant has the right to legal representation.",
+    "This NDA shall remain in effect for a period of 2 years."
+]
+
+# ----------------------------------------
+# 2. Preprocess Text
+# ----------------------------------------
+stop_words = set(stopwords.words('english'))
+lemmatizer = WordNetLemmatizer()
+
+def preprocess(text):
+    text = re.sub(r'[^a-zA-Z]', ' ', text.lower())
+    words = [lemmatizer.lemmatize(w) for w in text.split() if w not in stop_words]
+    return " ".join(words)
+
+clean_docs = [preprocess(doc) for doc in documents]
+
+# ----------------------------------------
+# 3. LDA Topic Modeling
+# ----------------------------------------
+vectorizer = CountVectorizer()
+X = vectorizer.fit_transform(clean_docs)
+
+lda = LatentDirichletAllocation(n_components=3, random_state=42)
+lda.fit(X)
+
+# Print topics
+feature_names = vectorizer.get_feature_names_out()
+for idx, topic in enumerate(lda.components_):
+    top_words = [feature_names[i] for i in topic.argsort()[-5:][::-1]]
+    print(f"\n🔹 Topic {idx+1}: {', '.join(top_words)}")
+
+# ----------------------------------------
+# 4. Document-Topic Distribution
+# ----------------------------------------
+topic_dist = lda.transform(X)
+df_topics = pd.DataFrame(topic_dist, columns=[f'Topic {i+1}' for i in range(3)])
+df_topics['Document'] = documents
+
+print("\nDocument-Topic Distribution:")
+print(df_topics)
+
+# ----------------------------------------
+# 5. Plot
+# ----------------------------------------
+df_topics.set_index('Document').plot(kind='barh', stacked=True, figsize=(8,5))
+plt.title('Topic Distribution Across Documents')
+plt.xlabel('Topic Proportion')
+plt.tight_layout()
+plt.show()
+
+
+
+
+
+
+
+
+
+
+# Practical 8: NER
+
+import spacy
+import matplotlib.pyplot as plt
+import seaborn as sns
+from collections import Counter
+
+# Load spaCy English model
+nlp = spacy.load("en_core_web_sm")
+
+# Sample legal text
+text = """
+On 15th March 2023, the Supreme Court of India delivered a judgment in
+the case of State of Maharashtra vs ABC Corporation.
+The case was presided over by Chief Justice D.Y. Chandrachud and
+Justice Sanjay Kishan Kaul.
+The matter pertained to a violation of contract between the Government
+of Maharashtra and ABC Corporation, a private logistics company based
+in Mumbai.
+"""
+
+# Process text and extract entities
+doc = nlp(text)
+entities = [(ent.text, ent.label_) for ent in doc.ents]
+
+# Print entities
+print("\nNamed Entities:")
+for ent, label in entities:
+    print(f"{ent} ({label})")
+
+# Count entity types
+counts = Counter(label for _, label in entities)
+print("\nEntity Counts:")
+for label, count in counts.items():
+    print(f"{label}: {count}")
+
+# Plot frequencies
+sns.barplot(x=list(counts.keys()), y=list(counts.values()), palette="Set2")
+plt.title("Named Entity Types in Legal Text")
+plt.xlabel("Entity Type")
+plt.ylabel("Count")
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Web scrapping
+# EDA
+# Text Preprocessing
+# Sentiment Analysis
+# machine learning
+# clustering algorithms
+# topic modelling
+# NER
+# BERT
+
+
+
+
+
+
+
+## Practical 1: Web Scrapping
+
+
+import requests
+from bs4 import BeautifulSoup
+
+url = "https://www.scobserver.in/cases/jarnail-singh-v-lacchmi-narain-gupta-reservation-in-promotion-case-background/"
+soup = BeautifulSoup(requests.get(url).text, 'html.parser')
+
+title = soup.select_one('div.single-cases__header').get_text(strip=True, separator='\n')
+key_issues = soup.select_one('div.single-cases__key-issues').get_text(strip=True, separator='\n')
+desc = soup.select_one('div.single__body.single-cases__body').get_text(strip=True, separator='\n')
+parties = soup.select_one('div.single-cases__col-2').get_text(strip=True, separator='\n')
+judges = soup.select_one('div.single-cases__col-1').get_text(strip=True, separator='\n')
+
+case_number = None
+for p in soup.select_one('div.single-cases__col-3').find_all('p'):
+    if "Case Number:" in p.text:
+        case_number = p.text.replace("Case Number:", "").strip()
+        break
+
+print("Case Number:", case_number)
+print("\nParties:", parties)
+print("\nJudges:", judges)
+print("\nKey Issues:", key_issues)
+print("\nDescription:", desc)
+
+
+
+
+
+
+
+
+
+# Practical 2 Exploratory Data Analysis
+
+import pandas as pd 
+import matplotlib.pyplot as plt 
+import seaborn as sns 
+path = r"C:\Users\Purav Badani\Desktop\DataScience\Sem 4\LegalAnalytics\Practicals\crime_dataset_india.csv" 
+df = pd.read_csv(path) 
+df.head() 
+
+# 1. Shape of DataSet 
+# ============================= 
+print("Shape of dataset:", df.shape) 
+ 
+# 2. Data Types 
+print("\nData Types:\n", df.dtypes)
+
+#3. Missing Values 
+print("\nMissing values:\n", df.isnull().sum()) 
+
+# 4. Summary Statistics 
+print("\nSummary Statistics:\n", df.describe()) 
+
+# Calculate mean, median, and mode for numerical columns 
+mean_values = df.mean(numeric_only=True) 
+print ("\n Mean Values:\n", mean_values) 
+print ("--------------------------------") 
+median_values = df.median(numeric_only=True) 
+print ("\n Mean Values:\n", median_values) 
+print ("--------------------------------") 
+mode_values = df.mode(numeric_only=True).iloc[0] 
+print ("\n Mode Values:\n", mode_values) 
+
+#Convert date columns to datetime 
+df['Date Reported'] = pd.to_datetime(df['Date Reported'], errors='coerce') 
+df['Date of Occurrence'] = pd.to_datetime(df['Date of Occurrence'], errors='coerce') 
+df['Date Case Closed'] = pd.to_datetime(df['Date Case Closed'], errors='coerce')
+
+#Top 10 cities by number of crimes 
+plt.figure(figsize=(12, 6)) 
+df['City'].value_counts().head(10).plot(kind='bar') 
+plt.title("Top 10 Cities by Number of Crimes") 
+plt.ylabel("Number of Reports") 
+plt.xlabel("City") 
+plt.xticks(rotation=45) 
+plt.tight_layout() 
+plt.show() 
+
+# Most common crime types 
+plt.figure(figsize=(12, 6)) 
+df['Crime Description'].value_counts().head(10).plot(kind='bar', color='coral') 
+plt.title("Top 10 Crime Types") 
+plt.ylabel("Number of Reports") 
+plt.xlabel("Crime Description") 
+plt.xticks(rotation=45) 
+plt.tight_layout() 
+plt.show() 
+
+# Victim Gender distribution 
+plt.figure(figsize=(6, 4)) 
+sns.countplot(data=df, x='Victim Gender', palette='Set2') 
+plt.title("Victim Gender Distribution") 
+plt.show() 
+
+#Weapon used 
+plt.figure(figsize=(10, 5)) 
+df['Weapon Used'].value_counts().plot(kind='bar', color='skyblue') 
+plt.title("Weapons Used in Crimes") 
+plt.xticks(rotation=45) 
+plt.tight_layout() 
+plt.show()
+
+# Victim Age distribution by Gender 
+plt.figure(figsize=(10, 6)) 
+sns.boxplot(data=df, x='Victim Gender', y='Victim Age') 
+plt.title("Victim Age by Gender") 
+plt.show()
+
+
+#Crime Heatmap by City and Crime Type 
+city_crime_pivot = df.pivot_table(index='City', columns='Crime Description', aggfunc='size', fill_value=0) 
+plt.figure(figsize=(14, 10)) 
+sns.heatmap(city_crime_pivot, cmap='Reds', linewidths=0.5) 
+plt.title("Crime Frequency by City and Crime Type") 
+plt.xlabel("Crime Type") 
+plt.ylabel("City") 
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+#Practical 3: Text Preprocessing
+
+import nltk
+import string
+import re
+from nltk.tokenize import word_tokenize, sent_tokenize
+from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer, SnowballStemmer, LancasterStemmer, WordNetLemmatizer
+
+# Download required resources
+nltk.download('punkt')
+nltk.download('wordnet')
+nltk.download('stopwords')
+
+# Sample legal text
+text = """Legal texts encompass a #variety of documents related to law,
+including statutes, case law, legal treatises, and agreements.
+They are characterized by their precision, clarity, and formality,
+aiming to establish and enforce rules and obligations."""
+
+# Step 1: Sentence Tokenization
+print("\n--- Sentence Tokenization ---")
+for i, sent in enumerate(sent_tokenize(text), 1):
+    print(f"Sentence {i}: {sent}")
+
+# Step 2: Word Tokenization
+print("\n--- Word Tokenization ---")
+words = word_tokenize(text)
+print("Words:", words)
+
+# Step 3: Remove Stopwords and Punctuation
+stop_words = set(stopwords.words('english'))
+
+filtered_words = [
+    word for word in words
+    if word.lower() not in stop_words and word not in string.punctuation
+]
+print("\n--- After Removing Stopwords and Punctuation ---")
+print("Filtered Words:", filtered_words)
+
+# Remove special characters inside words
+cleaned_words = [
+    re.sub(r'[^a-zA-Z]', '', word) for word in filtered_words
+]
+
+# Remove empty strings that resulted from cleaning
+cleaned_words = [word for word in cleaned_words if word]
+print("\n--- After Removing Special Characters ---")
+print("Cleaned Words:", cleaned_words)
+
+# Step 4: Stemming
+print("\n--- Stemming Results ---")
+ps = PorterStemmer()
+snowball = SnowballStemmer("english")
+lancaster = LancasterStemmer()
+
+print("\nPorter Stemmer:")
+print([ps.stem(word) for word in cleaned_words])
+
+print("\nSnowball Stemmer:")
+print([snowball.stem(word) for word in cleaned_words])
+
+print("\nLancaster Stemmer:")
+print([lancaster.stem(word) for word in cleaned_words])
+
+# Step 5: Lemmatization
+print("\n--- Lemmatization ---")
+lemmatizer = WordNetLemmatizer()
+lemmatized_words = [
+    lemmatizer.lemmatize(word, pos='v') for word in cleaned_words
+]
+print("Lemmatized Words:", lemmatized_words)
+
+
+
+
+
+
+
+
+
+
+
+
+# Practical 4 Sentiment Analysis
+
+# Install if missing:
+# pip install textblob vaderSentiment nltk
+
+import pandas as pd
+import nltk
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+import re
+from textblob import TextBlob
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Download NLTK resources once
+for res in ['stopwords', 'wordnet', 'omw-1.4', 'punkt']:
+    nltk.download(res)
+
+# Step 1: Sample legal texts
+texts = [
+    "The court's decision was a clear victory for the plaintiffs, who had suffered significant injustice.",
+    "The dissenting opinion strongly criticized the majority's flawed logic and its potential negative impact.",
+    "After careful consideration of all arguments, the court found no basis for the defendant's appeal.",
+    "The appellant presented compelling evidence; however, it was ultimately deemed insufficient.",
+    "The settlement agreement reached by the parties represents a fair and equitable resolution to this protracted dispute.",
+    "The judge's remarks were surprisingly lenient given the severity of the crime.",
+    "The legal team argued persuasively, leading to a favorable outcome for their client.",
+    "Despite the initial optimism, the case took an unexpected turn for the worse.",
+    "The ruling was met with widespread approval from legal scholars.",
+    "There was considerable doubt surrounding the validity of the evidence presented."
+]
+
+# Put into DataFrame
+df = pd.DataFrame({'text': texts})
+
+# Step 2: Preprocess
+stop_words = set(stopwords.words('english'))
+lemmatizer = WordNetLemmatizer()
+
+def preprocess(text):
+    text = re.sub(r"[^\w\s-]", "", text.lower())
+    words = [lemmatizer.lemmatize(w) for w in text.split() if w not in stop_words]
+    return " ".join(words)
+
+df['clean'] = df['text'].apply(preprocess)
+
+# Step 3: Sentiment analysis
+vader = SentimentIntensityAnalyzer()
+
+df['textblob_polarity'] = df['clean'].apply(lambda x: TextBlob(x).sentiment.polarity)
+df['vader_compound'] = df['clean'].apply(lambda x: vader.polarity_scores(x)['compound'])
+
+# Display results
+print(df[['text', 'textblob_polarity', 'vader_compound']])
+
+# Correlation
+corr = df['textblob_polarity'].corr(df['vader_compound'])
+print(f"\nCorrelation between TextBlob and VADER: {corr:.3f}")
+
+# Scatter Plot
+plt.figure(figsize=(8, 5))
+sns.scatterplot(data=df, x='textblob_polarity', y='vader_compound')
+plt.title("TextBlob vs VADER Sentiment")
+plt.xlabel("TextBlob Polarity")
+plt.ylabel("VADER Compound")
+plt.grid(True)
+plt.show()
+
+# Histograms
+plt.figure(figsize=(12, 4))
+plt.subplot(1, 2, 1)
+sns.histplot(df['textblob_polarity'], kde=True)
+plt.title("TextBlob Polarity Distribution")
+plt.subplot(1, 2, 2)
+sns.histplot(df['vader_compound'], kde=True, color='orange')
+plt.title("VADER Compound Distribution")
+plt.tight_layout()
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Practical 5:  machine learning model 
+
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import OneHotEncoder, LabelEncoder
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# -----------------------------------
+# 1. Create Data
+# -----------------------------------
+data = pd.DataFrame({
+    'Jurisdiction': np.random.choice(['Federal', 'State', 'Local'], 1000),
+    'Case_Type': np.random.choice(['Civil', 'Criminal', 'Traffic'], 1000),
+    'Plaintiff_Type': np.random.choice(['Individual', 'Company', 'Government'], 1000),
+    'Defendant_Type': np.random.choice(['Company', 'Individual'], 1000),
+    'Judge': np.random.choice(['A', 'B', 'C'], 1000),
+    'Outcome': np.random.choice(['Won', 'Lost', 'Settled'], 1000)
+})
+
+# -----------------------------------
+# 2. Encode Data
+# -----------------------------------
+X = data.drop('Outcome', axis=1)
+y = data['Outcome']
+
+# One-hot encode features
+ohe = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
+X_encoded = ohe.fit_transform(X)
+X_encoded = pd.DataFrame(X_encoded, columns=ohe.get_feature_names_out(X.columns))
+
+# Label encode target
+le = LabelEncoder()
+y_encoded = le.fit_transform(y)
+
+# -----------------------------------
+# 3. Split
+# -----------------------------------
+X_train, X_test, y_train, y_test = train_test_split(
+    X_encoded, y_encoded, test_size=0.2, random_state=42, stratify=y_encoded
+)
+
+# -----------------------------------
+# 4. Train & Evaluate
+# -----------------------------------
+models = {
+    'Logistic Regression': LogisticRegression(random_state=42, solver='liblinear'),
+    'Decision Tree': DecisionTreeClassifier(random_state=42)
+}
+
+for name, model in models.items():
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+    acc = accuracy_score(y_test, y_pred)
+
+    print(f"\n{name}")
+    print(f"Accuracy: {acc:.2f}")
+    print(classification_report(y_test, y_pred, target_names=le.classes_))
+
+    cm = confusion_matrix(y_test, y_pred)
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+                xticklabels=le.classes_,
+                yticklabels=le.classes_)
+    plt.title(f"{name} Confusion Matrix")
+    plt.xlabel("Predicted")
+    plt.ylabel("Actual")
+    plt.show()
+
+
+
+
+
+
+
+
+
+
+
+# Practical 6 clustering algorithms
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
+import nltk
+import re
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+
+# Download NLTK resources (runs only if missing)
+for resource in ['stopwords', 'wordnet']:
+    nltk.download(resource, quiet=True)
+
+# -------------------------------------
+# 1. Data
+# -------------------------------------
+documents = [
+    "The landlord must provide a safe and habitable living environment.",
+    "The employee is entitled to severance pay upon termination.",
+    "This agreement includes a confidentiality clause to protect sensitive information.",
+    "The contractor shall complete the work by the specified deadline.",
+    "In case of breach, the aggrieved party may seek damages.",
+    "The merger agreement must be approved by the shareholders.",
+    "The plaintiff alleges that the defendant breached the contract.",
+    "This lease agreement is valid for a term of one year.",
+    "The arbitration process shall be conducted in accordance with the rules of the American Arbitration Association.",
+    "The parties acknowledge that they have read and understood the terms of this agreement.",
+    "The insurance policy covers damages resulting from natural disasters."
+]
+
+# -------------------------------------
+# 2. Preprocessing Function
+# -------------------------------------
+stop_words = set(stopwords.words('english'))
+lemmatizer = WordNetLemmatizer()
+
+def preprocess(text):
+    text = re.sub(r'[^a-zA-Z]', ' ', text.lower())
+    words = [lemmatizer.lemmatize(w) for w in text.split() if w not in stop_words]
+    return " ".join(words)
+
+# Preprocess all docs
+clean_docs = [preprocess(d) for d in documents]
+
+# -------------------------------------
+# 3. TF-IDF Vectorization
+# -------------------------------------
+tfidf = TfidfVectorizer()
+X = tfidf.fit_transform(clean_docs)
+
+# -------------------------------------
+# 4. KMeans Clustering
+# -------------------------------------
+kmeans = KMeans(n_clusters=3, random_state=42)
+labels = kmeans.fit_predict(X)
+
+# -------------------------------------
+# 5. PCA for Visualization
+# -------------------------------------
+X_pca = PCA(n_components=2).fit_transform(X.toarray())
+
+plt.figure(figsize=(6,5))
+sns.scatterplot(x=X_pca[:,0], y=X_pca[:,1], hue=labels, palette="bright", s=80)
+plt.title("Legal Document Clusters (PCA Visualized)")
+plt.grid(True)
+plt.show()
+
+# -------------------------------------
+# 6. Show Clusters
+# -------------------------------------
+cluster_df = pd.DataFrame({'Document': documents, 'Cluster': labels})
+print(cluster_df)
+
+
+
+
+
+
+
+
+
+
+# Practical 7: Topic Modelling - LDA
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import re
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.decomposition import LatentDirichletAllocation
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+import nltk
+
+# Download NLTK resources if missing
+for res in ['stopwords', 'wordnet']:
+    nltk.download(res, quiet=True)
+
+# ----------------------------------------
+# 1. Data
+# ----------------------------------------
+documents = [
+    "The agreement shall be governed by the laws of the State of California.",
+    "This contract is subject to the jurisdiction of New York courts.",
+    "Parties must comply with the GDPR requirements for data protection.",
+    "Any dispute arising shall be resolved through arbitration in London.",
+    "The lessee agrees to maintain the property in good condition.",
+    "Data must be encrypted in accordance with HIPAA regulations.",
+    "The defendant has the right to legal representation.",
+    "This NDA shall remain in effect for a period of 2 years."
+]
+
+# ----------------------------------------
+# 2. Preprocess Text
+# ----------------------------------------
+stop_words = set(stopwords.words('english'))
+lemmatizer = WordNetLemmatizer()
+
+def preprocess(text):
+    text = re.sub(r'[^a-zA-Z]', ' ', text.lower())
+    words = [lemmatizer.lemmatize(w) for w in text.split() if w not in stop_words]
+    return " ".join(words)
+
+clean_docs = [preprocess(doc) for doc in documents]
+
+# ----------------------------------------
+# 3. LDA Topic Modeling
+# ----------------------------------------
+vectorizer = CountVectorizer()
+X = vectorizer.fit_transform(clean_docs)
+
+lda = LatentDirichletAllocation(n_components=3, random_state=42)
+lda.fit(X)
+
+# Print topics
+feature_names = vectorizer.get_feature_names_out()
+for idx, topic in enumerate(lda.components_):
+    top_words = [feature_names[i] for i in topic.argsort()[-5:][::-1]]
+    print(f"\n🔹 Topic {idx+1}: {', '.join(top_words)}")
+
+# ----------------------------------------
+# 4. Document-Topic Distribution
+# ----------------------------------------
+topic_dist = lda.transform(X)
+df_topics = pd.DataFrame(topic_dist, columns=[f'Topic {i+1}' for i in range(3)])
+df_topics['Document'] = documents
+
+print("\nDocument-Topic Distribution:")
+print(df_topics)
+
+# ----------------------------------------
+# 5. Plot
+# ----------------------------------------
+df_topics.set_index('Document').plot(kind='barh', stacked=True, figsize=(8,5))
+plt.title('Topic Distribution Across Documents')
+plt.xlabel('Topic Proportion')
+plt.tight_layout()
+plt.show()
+
+
+
+
+
+
+
+
+
+
+# Practical 8: NER
+
+import spacy
+import matplotlib.pyplot as plt
+import seaborn as sns
+from collections import Counter
+
+# Load spaCy English model
+nlp = spacy.load("en_core_web_sm")
+
+# Sample legal text
+text = """
+On 15th March 2023, the Supreme Court of India delivered a judgment in
+the case of State of Maharashtra vs ABC Corporation.
+The case was presided over by Chief Justice D.Y. Chandrachud and
+Justice Sanjay Kishan Kaul.
+The matter pertained to a violation of contract between the Government
+of Maharashtra and ABC Corporation, a private logistics company based
+in Mumbai.
+"""
+
+# Process text and extract entities
+doc = nlp(text)
+entities = [(ent.text, ent.label_) for ent in doc.ents]
+
+# Print entities
+print("\nNamed Entities:")
+for ent, label in entities:
+    print(f"{ent} ({label})")
+
+# Count entity types
+counts = Counter(label for _, label in entities)
+print("\nEntity Counts:")
+for label, count in counts.items():
+    print(f"{label}: {count}")
+
+# Plot frequencies
+sns.barplot(x=list(counts.keys()), y=list(counts.values()), palette="Set2")
+plt.title("Named Entity Types in Legal Text")
+plt.xlabel("Entity Type")
+plt.ylabel("Count")
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Practical 9 QA System BERT
+
+# ---------------------------
+# CONDA SETUP (shell commands)
+# ---------------------------
+# conda create -n legal-qa-env python=3.10
+# conda activate legal-qa-env
+# pip install transformers datasets torch evaluate
+
+# ---------------------------
+# Python Script (legal_qa.py)
+# ---------------------------
+
+import torch
+from transformers import BertTokenizerFast, BertForQuestionAnswering, Trainer, TrainingArguments
+from datasets import Dataset
+import evaluate
+
+# -------------------------------------
+# 1. Sample Data
+# -------------------------------------
+train_data = {
+    "context": [
+        "This agreement may be terminated by either party with a 30-day written notice.",
+        "Parties agree to keep all information confidential for two years after contract termination."
+    ],
+    "question": [
+        "What is the termination clause?",
+        "What is the confidentiality duration?"
+    ],
+    "answers": [
+        {"text": ["terminated by either party with a 30-day written notice"], "answer_start": [38]},
+        {"text": ["two years after contract termination"], "answer_start": [57]}
+    ]
+}
+
+valid_data = {
+    "context": ["The employee may be dismissed for misconduct or violation of policy."],
+    "question": ["What are reasons for dismissal?"],
+    "answers": [{"text": ["misconduct or violation of policy"], "answer_start": [33]}]
+}
+
+train_ds = Dataset.from_dict(train_data)
+valid_ds = Dataset.from_dict(valid_data)
+
+# -------------------------------------
+# 2. Model & Tokenizer
+# -------------------------------------
+model_name = "bert-base-uncased"
+tokenizer = BertTokenizerFast.from_pretrained(model_name)
+model = BertForQuestionAnswering.from_pretrained(model_name)
+
+# -------------------------------------
+# 3. Preprocessing Function
+# -------------------------------------
+def preprocess(batch):
+    tokenized = tokenizer(
+        batch["question"],
+        batch["context"],
+        truncation=True,
+        max_length=384,
+        stride=128,
+        return_offsets_mapping=True,
+        padding="max_length"
+    )
+    start_pos, end_pos = [], []
+    for i, offsets in enumerate(tokenized["offset_mapping"]):
+        ans = batch["answers"][i]
+        start_char = ans["answer_start"][0]
+        end_char = start_char + len(ans["text"][0])
+        seq_ids = tokenized.sequence_ids(i)
+
+        token_start, token_end = 0, len(offsets)-1
+        while seq_ids[token_start] != 1: token_start += 1
+        while seq_ids[token_end] != 1: token_end -= 1
+
+        if start_char >= offsets[token_start][0] and end_char <= offsets[token_end][1]:
+            for idx in range(token_start, token_end + 1):
+                if offsets[idx][0] <= start_char < offsets[idx][1]:
+                    start_pos.append(idx)
+                    break
+            for idx in reversed(range(token_start, token_end + 1)):
+                if offsets[idx][0] < end_char <= offsets[idx][1]:
+                    end_pos.append(idx)
+                    break
+        else:
+            start_pos.append(tokenized["input_ids"][i].index(tokenizer.cls_token_id))
+            end_pos.append(tokenized["input_ids"][i].index(tokenizer.cls_token_id))
+
+    tokenized["start_positions"] = start_pos
+    tokenized["end_positions"] = end_pos
+    tokenized.pop("offset_mapping")
+    return tokenized
+
+train_ds = train_ds.map(preprocess, batched=True, remove_columns=train_ds.column_names)
+valid_ds = valid_ds.map(preprocess, batched=True, remove_columns=valid_ds.column_names)
+
+# -------------------------------------
+# 4. Metrics
+# -------------------------------------
+metric = evaluate.load("squad")
+
+def compute_metrics(p):
+    start, end = p.predictions
+    predictions = []
+    for i in range(len(start)):
+        start_idx = torch.argmax(torch.tensor(start[i])).item()
+        end_idx = torch.argmax(torch.tensor(end[i])).item()
+        if end_idx < start_idx:
+            end_idx = start_idx
+        input_ids = valid_ds[i]["input_ids"]
+        pred_text = tokenizer.decode(input_ids[start_idx:end_idx+1], skip_special_tokens=True)
+        predictions.append({"id": str(i), "prediction_text": pred_text})
+    references = [{"id": str(i), "answers": valid_data["answers"][i]} for i in range(len(valid_data["answers"]))]
+    return metric.compute(predictions=predictions, references=references)
+
+# -------------------------------------
+# 5. Training Setup
+# -------------------------------------
+training_args = TrainingArguments(
+    output_dir="./results",
+    evaluation_strategy="epoch",
+    learning_rate=2e-5,
+    per_device_train_batch_size=2,
+    per_device_eval_batch_size=2,
+    num_train_epochs=2,
+    weight_decay=0.01,
+    logging_dir="./logs"
+)
+
+trainer = Trainer(
+    model=model,
+    args=training_args,
+    train_dataset=train_ds,
+    eval_dataset=valid_ds,
+    tokenizer=tokenizer,
+    compute_metrics=compute_metrics
+)
+
+# -------------------------------------
+# 6. Train and Evaluate
+# -------------------------------------
+trainer.train()
+results = trainer.evaluate()
+print("Evaluation Results:", results)
+
+# -------------------------------------
+# 7. Simple Inference
+# -------------------------------------
+def answer(question, context):
+    inputs = tokenizer(question, context, return_tensors="pt")
+    outputs = model(**inputs)
+    start = torch.argmax(outputs.start_logits)
+    end = torch.argmax(outputs.end_logits)
+    tokens = tokenizer.convert_ids_to_tokens(inputs["input_ids"][0])
+    answer_tokens = tokens[start:end+1]
+    return tokenizer.convert_tokens_to_string(answer_tokens).strip()
+
+q = "What is the termination clause?"
+c = "This agreement may be terminated by either party with a 30-day written notice."
+print(f"Q: {q}")
+print(f"A: {answer(q, c)}")
+
+
+#Step 5: Run script inside the virtual environment 
+#python legal_qa.py 
+
+
+
+
+
+
+
+# Web scrapping
+# EDA
+# Text Preprocessing
+# Sentiment Analysis
+# machine learning
+# clustering algorithms
+# topic modelling
+# NER
+# BERT
+
+
+
+
+
+# P1
+# pip install nltk
+# nltk.download('punkt')
+
+from nltk.tokenize import word_tokenize, sent_tokenize
+
+# Input text
+text = "The agreement will be legal and can be used in court under California law."
+
+# Word Tokenization
+words = word_tokenize(text)
+print("The words are", words)
+
+# Sentence Tokenization
+sentences = sent_tokenize(text)
+print("The sentences are", sentences)
+
+
+
+
+
+
+
+
+# P2
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+#to ignore warnings
+import warnings
+warnings.filterwarnings('ignore')
+
+path = "C:\\Users\\tripa\\OneDrive\\Desktop\\Data Science\\SEM 4\\Legal\\US_Crime_DataSet.csv"
+
+df = pd.read_csv(path)
+
+#head() will display the top 5 observations of the dataset
+data.head()
+
+#tail() will display the last 5 observations of the dataset
+df.tail()
+
+# Data type
+df.info()
+
+
+# output shows the number of unique values in each column, helping identify categorical variables and variability
+
+df.nunique()
+
+
+#confirms that most columns have no missing values
+
+df.isnull().sum()
+
+
+# # Calculate mean, median, and mode for numerical columns
+df.describe().T
+
+
+# c1) Visualize distribution of case outcomes
+if 'Case_Outcome' in df.columns:
+    plt.figure(figsize=(8, 5))
+    sns.countplot(data=df, x='Case_Outcome', palette='Set2', order=df['Case_Outcome'].value_counts().index)
+    plt.title("Distribution of Case Outcomes")
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+else:
+    print("Column 'Case_Outcome' not found in dataset.")
+
+
+
+# c1) Distribution of Crime Solved (case outcome)
+plt.figure(figsize=(7, 4))
+sns.countplot(data=df, x='Crime Solved', palette='coolwarm', order=df['Crime Solved'].value_counts().index)
+plt.title("Distribution of Crime Solved Outcomes")
+plt.xlabel("Crime Solved")
+plt.ylabel("Number of Cases")
+plt.tight_layout()
+plt.show()
+
+
+
+
+# c2) Frequency of different Crime Types
+plt.figure(figsize=(10, 5))
+sns.countplot(data=df, x='Crime Type', palette='Set3', order=df['Crime Type'].value_counts().index)
+plt.title("Frequency of Different Crime Types")
+plt.xlabel("Crime Type")
+plt.ylabel("Number of Cases")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+
+
+
+
+
+
+OR
+
+
+
+
+#P2
+# STEMMING CODE:
+
+import nltk
+from nltk.stem import PorterStemmer, SnowballStemmer, LancasterStemmer
+
+# Download required resources
+nltk.download('punkt')
+
+# Sample words
+words = ['defendant', 'was', 'charged', 'and', 'arrested']
+
+# Porter Stemmer
+def portstemming(words):
+    ps = PorterStemmer()
+    print("Porter Stemmer:")
+    for word in words:
+        print(f"{word} -> {ps.stem(word)}")
+
+# Snowball Stemmer
+def snowballstemming(words):
+    snowball = SnowballStemmer(language='english')
+    print("Snowball Stemmer:")
+    for word in words:
+        print(f"{word} -> {snowball.stem(word)}")
+
+# Lancaster Stemmer
+def lancasterstemming(words):
+    lancaster = LancasterStemmer()
+    print("Lancaster Stemmer:")
+    for word in words:
+        print(f"{word} -> {lancaster.stem(word)}")
+
+# Menu
+print("Select Operation.")
+print("1. Porter Stemmer")
+print("2. Snowball Stemmer")
+print("3. Lancaster Stemmer")
+
+while True:
+    choice = input("Enter Choice (1/2/3): ")
+    if choice in ('1', '2', '3'):
+        if choice == '1':
+            portstemming(words)
+        elif choice == '2':
+            snowballstemming(words)
+        elif choice == '3':
+            lancasterstemming(words)
+
+        next_calculation = input("Do you want to do stemming again? (yes/no): ")
+        if next_calculation.lower() == "no":
+            break
+    else:
+        print("Invalid Input. Try again.")
+
+
+
+
+
+#LEMMATIZATION CODE:
+
+import nltk
+from nltk.stem import WordNetLemmatizer
+from nltk.tokenize import word_tokenize
+
+# Download necessary resources
+nltk.download('punkt')
+nltk.download('wordnet')
+
+# Initialize Lemmatizer
+lemmatizer = WordNetLemmatizer()
+
+# Input from user
+text = input("Enter words for Lemmatizing: ")
+tokens = word_tokenize(text)
+
+print("Lemmatization Results:")
+for word in tokens:
+    # Default as verb (v), can also try 'n' for noun
+    print(f"Lemma for '{word}' is '{lemmatizer.lemmatize(word, 'v')}'")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Install
+!pip install nltk textblob
+
+# Imports
+import re
+import nltk
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer, WordNetLemmatizer
+
+# Downloads
+nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('wordnet')
+
+# Sample legal documents
+docs = ["The witnesses testified!!! But their statements... weren't convincing??!!"]
+
+# Initialize tools
+stop_words = set(stopwords.words("english"))
+stemmer = PorterStemmer()
+lemmatizer = WordNetLemmatizer()
+
+# Preprocessing function
+def preprocess(doc):
+    doc_lowercase = doc.lower()                                  # Convert to lowercase
+    doc = re.sub(r'[^a-z\s]', '', doc_lowercase)                  # Remove non-alphabetical characters
+    tokens = word_tokenize(doc)                                   # Tokenize
+    filtered = [w for w in tokens if w not in stop_words]         # Remove stopwords
+    stemmed = [stemmer.stem(w) for w in filtered]                 # Stem
+    lemmatized = [lemmatizer.lemmatize(w) for w in filtered]      # Lemmatize
+    return doc_lowercase, doc, tokens, filtered, stemmed, lemmatized
+
+# Apply and display
+for i, text in enumerate(docs, 1):
+    print(f"\n--- Output {i} ---")
+    doc_lowercase, cleaned, tokens, filtered, stems, lemmas = preprocess(text)
+    print("Lowercased Text:", doc_lowercase)
+    print("Removed Special Characters:", cleaned)
+    print("Tokenized Text:", tokens)
+    print("Stopword Removal:", filtered)
+    print("Stemmed:", stems)
+    print("Lemmatized:", lemmas)
+    print("Final Preprocessed Text:", ' '.join(lemmas))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#P4
+
+# Install required packages (uncomment if needed)
+# !pip install textblob vaderSentiment nltk seaborn matplotlib
+# !python -m textblob.download_corpora
+
+import pandas as pd
+import nltk
+import re
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+from textblob import TextBlob
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Ensure required NLTK data is downloaded
+for resource in ['stopwords', 'wordnet', 'omw-1.4']:
+    try:
+        nltk.data.find(f'corpora/{resource}')
+    except LookupError:
+        nltk.download(resource)
+
+# Step 1: Input legal opinions
+data = {
+    'opinion_text': [
+        "The court's decision was a clear victory for the plaintiffs, who had suffered significant injustice.",
+        "The dissenting opinion strongly criticized the majority's flawed logic and its potential negative impact.",
+        "After careful consideration of all arguments, the court found no basis for the defendant's appeal.",
+        "The appellant presented compelling evidence; however, it was ultimately deemed insufficient.",
+        "The settlement agreement reached by the parties represents a fair and equitable resolution to this protracted dispute.",
+        "The judge's remarks were surprisingly lenient given the severity of the crime.",
+        "The legal team argued persuasively, leading to a favorable outcome for their client.",
+        "Despite the initial optimism, the case took an unexpected turn for the worse.",
+        "The ruling was met with widespread approval from legal scholars.",
+        "There was considerable doubt surrounding the validity of the evidence presented."
+    ]
+}
+df = pd.DataFrame(data)
+
+# Step 2: Preprocessing
+stop_words = set(stopwords.words('english'))
+lemmatizer = WordNetLemmatizer()
+
+def preprocess(text):
+    text = text.lower()
+    text = re.sub(r'[^\w\s-]', '', text)
+    words = text.split()
+    words = [lemmatizer.lemmatize(w) for w in words if w not in stop_words]
+    return " ".join(words)
+
+df['clean_text'] = df['opinion_text'].apply(preprocess)
+
+# Step 3: Sentiment Analysis
+vader = SentimentIntensityAnalyzer()
+
+df[['blob_polarity', 'blob_subjectivity']] = df['clean_text'].apply(
+    lambda t: pd.Series(TextBlob(t).sentiment)
+)
+
+df[['vader_neg', 'vader_neu', 'vader_pos', 'vader_compound']] = df['clean_text'].apply(
+    lambda t: pd.Series(vader.polarity_scores(t))
+)
+
+# Step 4: Output sample
+print("\n--- Sample Sentiment Analysis Results ---")
+print(df[['opinion_text', 'blob_polarity', 'vader_compound']].head())
+
+# Step 5: Correlation
+correlation = df['blob_polarity'].corr(df['vader_compound'])
+print(f"\nCorrelation between TextBlob Polarity and VADER Compound: {correlation:.3f}")
+
+# Step 6: Visualization
+plt.figure(figsize=(10, 6))
+sns.scatterplot(x='blob_polarity', y='vader_compound', data=df)
+plt.title('TextBlob Polarity vs. VADER Compound Sentiment')
+plt.xlabel('TextBlob Polarity')
+plt.ylabel('VADER Compound')
+plt.grid(True)
+plt.show()
+
+plt.figure(figsize=(12, 5))
+plt.subplot(1, 2, 1)
+sns.histplot(df['blob_polarity'], kde=True)
+plt.title('Distribution of TextBlob Polarity')
+plt.xlabel('Polarity Score')
+
+plt.subplot(1, 2, 2)
+sns.histplot(df['vader_compound'], kde=True, color='orange')
+plt.title('Distribution of VADER Compound Score')
+plt.xlabel('Compound Score')
+
+plt.tight_layout()
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#P5 
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import OneHotEncoder, LabelEncoder
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# --- Generate and Expand Example Data ---
+def generate_data(n_samples=1000):
+    base_data = {
+        'Jurisdiction': np.random.choice(['Federal', 'State', 'Local'], size=n_samples),
+        'Case_Type': np.random.choice(['Civil', 'Criminal', 'Traffic'], size=n_samples),
+        'Plaintiff_Type': np.random.choice(['Individual', 'Company', 'Government', np.nan], size=n_samples),
+        'Defendant_Type': np.random.choice(['Company', 'Individual'], size=n_samples),
+        'Judge': np.random.choice(['A', 'B', 'C'], size=n_samples),
+        'Outcome': np.random.choice(['Won', 'Lost', 'Settled'], size=n_samples)
+    }
+    return pd.DataFrame(base_data)
+
+df = generate_data()
+
+# --- Preprocess Data ---
+X = df.drop('Outcome', axis=1)
+y = df['Outcome']
+
+# Handle missing and encode
+X = SimpleImputer(strategy='most_frequent').fit_transform(X)
+X = pd.DataFrame(X, columns=df.columns[:-1])
+X_encoded = OneHotEncoder(sparse_output=False, handle_unknown='ignore').fit_transform(X)
+X_encoded = pd.DataFrame(X_encoded)
+
+y_encoded = LabelEncoder().fit_transform(y)
+
+# --- Train/Test Split ---
+X_train, X_test, y_train, y_test = train_test_split(X_encoded, y_encoded, test_size=0.2, stratify=y_encoded, random_state=42)
+
+# --- Train Models ---
+models = {
+    'Logistic Regression': LogisticRegression(solver='liblinear', multi_class='ovr'),
+    'Decision Tree': DecisionTreeClassifier()
+}
+
+results = {}
+
+for name, model in models.items():
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+    results[name] = {
+        'train_acc': accuracy_score(y_train, model.predict(X_train)),
+        'test_acc': accuracy_score(y_test, y_pred),
+        'report': classification_report(y_test, y_pred, target_names=LabelEncoder().fit(y).classes_),
+        'conf_matrix': confusion_matrix(y_test, y_pred)
+    }
+
+# --- Print Results ---
+for name, res in results.items():
+    print(f"\n{name}:\nTrain Accuracy: {res['train_acc']:.2f}, Test Accuracy: {res['test_acc']:.2f}")
+    print(f"Classification Report:\n{res['report']}")
+
+# --- Plot Confusion Matrices ---
+fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+for ax, (name, res) in zip(axes, results.items()):
+    sns.heatmap(res['conf_matrix'], annot=True, fmt='d', cmap='Blues',
+                xticklabels=LabelEncoder().fit(y).classes_,
+                yticklabels=LabelEncoder().fit(y).classes_,
+                ax=ax)
+    ax.set_title(f"{name} Confusion Matrix")
+    ax.set_xlabel('Predicted')
+    ax.set_ylabel('Actual')
+
+plt.tight_layout()
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#P6 
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import re, nltk
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+
+# Download required NLTK data
+nltk.download('stopwords', quiet=True)
+nltk.download('wordnet', quiet=True)
+
+# Sample legal documents
+docs = [
+    "The landlord must provide a safe and habitable living environment.",
+    "The employee is entitled to severance pay upon termination.",
+    "This agreement includes a confidentiality clause to protect sensitive information.",
+    "The contractor shall complete the work by the specified deadline.",
+    "In case of breach, the aggrieved party may seek damages.",
+    "The merger agreement must be approved by the shareholders.",
+    "The plaintiff alleges that the defendant breached the contract.",
+    "This lease agreement is valid for a term of one year.",
+    "The arbitration process shall be conducted in accordance with the rules of the American Arbitration Association.",
+    "The parties acknowledge that they have read and understood the terms of this agreement.",
+    "The insurance policy covers damages resulting from natural disasters."
+]
+
+# Text Preprocessing
+stop_words = set(stopwords.words('english'))
+lemmatizer = WordNetLemmatizer()
+def clean(text):
+    return ' '.join(lemmatizer.lemmatize(w) for w in re.sub(r'\W+', ' ', text.lower()).split() if w not in stop_words)
+
+X = TfidfVectorizer().fit_transform([clean(doc) for doc in docs])
+labels = KMeans(n_clusters=3, random_state=42).fit_predict(X)
+X_pca = PCA(n_components=2).fit_transform(X.toarray())
+
+# Visualization
+plt.figure(figsize=(5,5))
+sns.scatterplot(x=X_pca[:,0], y=X_pca[:,1], hue=labels, palette='bright', s=100, edgecolor='k')
+plt.title("K-Means Clustering of Legal Documents")
+plt.xlabel("PC1"); plt.ylabel("PC2"); plt.legend(title="Cluster"); plt.grid(True); plt.show()
+
+# Output table
+print("\nClustered Documents:")
+print(pd.DataFrame({'Document': docs, 'Cluster': labels}))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#P7
+import re, nltk, pandas as pd, matplotlib.pyplot as plt
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.decomposition import LatentDirichletAllocation
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+
+nltk.download('stopwords', quiet=True)
+nltk.download('wordnet', quiet=True)
+
+docs = [
+    "The agreement shall be governed by the laws of the State of California.",
+    "This contract is subject to the jurisdiction of New York courts.",
+    "Parties must comply with the GDPR requirements for data protection.",
+    "Any dispute arising shall be resolved through arbitration in London.",
+    "The lessee agrees to maintain the property in good condition.",
+    "Data must be encrypted in accordance with HIPAA regulations.",
+    "The defendant has the right to legal representation.",
+    "This NDA shall remain in effect for a period of 2 years.",
+]
+
+stop_words = set(stopwords.words('english'))
+lemmatizer = WordNetLemmatizer()
+def clean(text):
+    return ' '.join(lemmatizer.lemmatize(w) for w in re.sub(r'\W+', ' ', text.lower()).split() if w not in stop_words)
+
+X = CountVectorizer().fit_transform([clean(doc) for doc in docs])
+lda = LatentDirichletAllocation(n_components=3, random_state=42).fit(X)
+features = CountVectorizer().fit([clean(doc) for doc in docs]).get_feature_names_out()
+
+# Display topics
+for i, topic in enumerate(lda.components_):
+    print(f"\n🔹 Topic {i+1}:", ', '.join([features[j] for j in topic.argsort()[-5:][::-1]]))
+
+# Topic distribution per document
+df = pd.DataFrame(lda.transform(X), columns=[f"Topic {i+1}" for i in range(3)])
+df['Document'] = docs
+print("\nTopic Distribution:\n", df)
+
+# Visualization
+df.set_index('Document').plot(kind='barh', stacked=True, figsize=(9, 6))
+plt.title('Topic Distribution Across Documents')
+plt.xlabel('Topic Proportion'); plt.ylabel('Documents')
+plt.legend(title='Topics'); plt.tight_layout(); plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#P8
+
+import spacy
+from collections import Counter
+import matplotlib.pyplot as plt
+import seaborn as sns
+import warnings
+warnings.filterwarnings("ignore")
+
+# Load spaCy's small English model
+nlp = spacy.load("en_core_web_sm")
+
+# Sample legal text
+legal_text = """
+On 15th March 2023, the Supreme Court of India delivered a judgment in the case of State of Maharashtra vs ABC Corporation.
+The case was presided over by Chief Justice D.Y. Chandrachud and Justice Sanjay Kishan Kaul.
+The matter pertained to a violation of contract between the Government of Maharashtra and ABC Corporation, a private logistics company based in Mumbai.
+"""
+
+# Process the text with spaCy's NER model
+doc = nlp(legal_text)
+
+# Extract entities and their labels
+entities = [(ent.text, ent.label_) for ent in doc.ents]
+
+# Print all extracted entities
+print("\n--- Extracted Named Entities ---")
+for text, label in entities:
+    print(f"{text} ({label})")
+
+# Count the occurrences of each entity label
+label_freq = Counter([label for _, label in entities])
+
+# Print frequency analysis
+print("\n--- Frequency of Entity Types ---")
+for label, count in label_freq.items():
+    print(f"{label}: {count}")
+
+# Visualization: Bar chart of entity types
+plt.figure(figsize=(8, 5))
+sns.barplot(x=list(label_freq.keys()), y=list(label_freq.values()), palette='Set2')
+plt.title("Frequency of Named Entity Types in Legal Text")
+plt.xlabel("Entity Type")
+plt.ylabel("Count")
+plt.tight_layout()
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
